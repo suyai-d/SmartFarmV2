@@ -20,20 +20,28 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-# -----------------------------------------------------------
-# CONFIGURACIÓN DE PROXY
-# -----------------------------------------------------------
-PROXY_URL = "http://Sdagatti:Suya$1973@proxy.conci.com.ar:8080"
-os.environ['HTTP_PROXY'] = PROXY_URL
-os.environ['HTTPS_PROXY'] = PROXY_URL
+import os
+import streamlit as st
+import plotly.express as px
+import pandas as pd
+from conexion import load_data, MAIN_WORKSHEET_NAME, COL_PUNTAJE
 
-# -----------------------------------------------------------
-# CONSTANTES Y COLUMNAS
-# -----------------------------------------------------------
-SHEET_ID = "17HdWAA_Taphajpj6l1h1zTlgIQrl6VbKIBWPZytlGgg"
-MAIN_WORKSHEET_NAME = "Hoja 1"
+st.set_page_config(
+    page_title="SmartFarm - Conci",
+    layout="wide",
+    page_icon="sf1.png"
+)
+
+# Ya no definimos PROXY ni SHEET_ID aquí, los trae conexion.py
+df = load_data(MAIN_WORKSHEET_NAME)
+
+if not df.empty:
+    st.title("📊 Dashboard Principal SmartFarm")
+    # ... (Tu código de visualización aquí)
+else:
+    st.warning("No se pudieron cargar los datos. Revisa los Secrets.")
+    
 COL_PUNTAJE = "PUNTAJE TOTAL SMARTFARM"
-
 EVALUATION_CATEGORIES = ["Granos", "Ganadería", "Cultivos de Alto Valor"]
 BRANCHES = ["Córdoba", "Pilar", "Sinsacate", "Arroyito", "Santa Rosa"]
 CLIENT_TYPES = ["Tipo 1", "Tipo 2", "Tipo 3"]
@@ -299,4 +307,5 @@ with t3:
         ).reset_index()
         st.table(res.style.format({'Puntaje_Total': '{:.0f}', 'Puntaje_Promedio': '{:.2f}'}))
     else:
+
         st.info("💡 Aún no hay datos para mostrar en el análisis. Registre un cliente para comenzar.")
