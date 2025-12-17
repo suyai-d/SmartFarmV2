@@ -91,11 +91,6 @@ EVALUATION_MAP = {
 # -----------------------------------------------------------
 # FUNCIONES DE CONEXIÓN
 # -----------------------------------------------------------
-@st.cache_resource(ttl=3600)
-def get_gspread_client():
-    creds_json = st.secrets["gcp_service_account"]
-    return gspread.service_account_from_dict(creds_json)
-
 
 @st.cache_data(ttl=300)
 def load_data(ws_name):
@@ -283,4 +278,5 @@ with t3:
         ).reset_index()
         st.table(res.style.format({'Puntaje_Total': '{:.0f}', 'Puntaje_Promedio': '{:.2f}'}))
     else:
+
         st.info("💡 Aún no hay datos para mostrar en el análisis. Registre un cliente para comenzar.")
