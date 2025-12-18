@@ -36,28 +36,29 @@ def get_gspread_client():
         st.error("Error: No se encuentra la llave 'gcp_service_account' en los Secrets.")
         st.stop()
 
-    # Copiamos los secretos para no alterar el original
     creds = dict(st.secrets["gcp_service_account"])
     
-    # --- LIMPIEZA EXTREMA DE LA LLAVE ---
+    # --- REPARACIÓN AVANZADA DE LLAVE PRIVADA ---
     raw_key = creds.get("private_key", "")
     
-    # 1. Limpieza básica de comillas y caracteres de escape
+    # 1. Limpieza inicial
     fixed_key = raw_key.replace("\\n", "\n").strip().strip('"').strip("'")
     
-    # 2. Extraer el encabezado y pie
     header = "-----BEGIN PRIVATE KEY-----"
     footer = "-----END PRIVATE KEY-----"
     
     if header in fixed_key and footer in fixed_key:
-        # 3. NORMALIZACIÓN BASE64 (Esto elimina el error de Padding)
-        # Extraemos solo el contenido base64 central
-        core_key = fixed_key.replace(header, "").replace(footer, "")
-        # Eliminamos CUALQUIER espacio, salto de línea o tabulación
-        core_key = "".join(core_key.split())
+        # 2. Normalización de contenido Base64
+        content = fixed_key.replace(header, "").replace(footer, "")
+        content = "".join(content.split()) # Quita espacios y saltos invisibles
         
-        # Reconstruimos la llave con saltos de línea cada 64 caracteres (estándar RSA)
-        lines = [core_key[i:i+64] for i in range(0, len(core_key), 64)]
+        # 3. Reparar Padding (relleno =)
+        missing_padding = len(content) % 4
+        if missing_padding:
+            content += "=" * (4 - missing_padding)
+            
+        # 4. Reconstrucción con formato RSA estándar
+        lines = [content[i:i+64] for i in range(0, len(content), 64)]
         fixed_key = header + "\n" + "\n".join(lines) + "\n" + footer
 
     creds["private_key"] = fixed_key
@@ -79,10 +80,9 @@ def load_data(ws_name):
             return pd.DataFrame()
 
         df = pd.DataFrame(data)
+        # Normalización de columnas para evitar KeyErrors
         df.columns = [str(c).strip().upper() for c in df.columns]
         return df
     except Exception as e:
         st.error(f"Error cargando la hoja '{ws_name}': {e}")
         return pd.DataFrame()
-
-
