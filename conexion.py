@@ -30,6 +30,8 @@ setup_proxy()
 
 # --- FUNCIONES DE CONEXIÓN ---
 
+import base64
+
 @st.cache_resource(ttl=3600)
 def get_gspread_client():
     if "gcp_service_account" not in st.secrets:
@@ -38,35 +40,40 @@ def get_gspread_client():
 
     creds = dict(st.secrets["gcp_service_account"])
     
-    # --- REPARACIÓN AVANZADA DE LLAVE PRIVADA ---
+    # --- RECONSTRUCCIÓN TOTAL DE LLAVE (Solución Definitiva) ---
     raw_key = creds.get("private_key", "")
     
-    # 1. Limpieza inicial
-    fixed_key = raw_key.replace("\\n", "\n").strip().strip('"').strip("'")
-    
+    # 1. Identificar encabezado y pie
     header = "-----BEGIN PRIVATE KEY-----"
     footer = "-----END PRIVATE KEY-----"
     
-    if header in fixed_key and footer in fixed_key:
-        # 2. Normalización de contenido Base64
-        content = fixed_key.replace(header, "").replace(footer, "")
-        content = "".join(content.split()) # Quita espacios y saltos invisibles
-        
-        # 3. Reparar Padding (relleno =)
-        missing_padding = len(content) % 4
-        if missing_padding:
-            content += "=" * (4 - missing_padding)
-            
-        # 4. Reconstrucción con formato RSA estándar
-        lines = [content[i:i+64] for i in range(0, len(content), 64)]
-        fixed_key = header + "\n" + "\n".join(lines) + "\n" + footer
+    # 2. Extraer solo el contenido central (Base64 puro)
+    # Quitamos encabezado, pie, comillas, saltos de línea de texto (\n) y espacios
+    clean_content = raw_key.replace(header, "").replace(footer, "")
+    clean_content = clean_content.replace("\\n", "").replace("\n", "").replace(" ", "").strip()
+    clean_content = clean_content.strip('"').strip("'")
+    
+    # 3. REPARAR PADDING MATEMÁTICAMENTE
+    # Base64 debe ser múltiplo de 4. Si faltan caracteres, agregamos '='
+    mod = len(clean_content) % 4
+    if mod > 0:
+        clean_content += "=" * (4 - mod)
+    
+    # 4. REENSAMBLAR RSA
+    # Google requiere que la llave tenga el formato oficial con saltos cada 64 caracteres
+    final_key = header + "\n"
+    for i in range(0, len(clean_content), 64):
+        final_key += clean_content[i:i+64] + "\n"
+    final_key += footer
 
-    creds["private_key"] = fixed_key
+    creds["private_key"] = final_key
 
     try:
         return gspread.service_account_from_dict(creds)
     except Exception as e:
-        st.error(f"Fallo en la creación del cliente gspread: {e}")
+        st.error(f"Fallo crítico en gspread: {e}")
+        # Debug solo en caso de error para ver qué está llegando
+        st.write(f"Longitud final calculada: {len(clean_content)}")
         st.stop()
 
 @st.cache_data(ttl=300)
@@ -86,3 +93,4 @@ def load_data(ws_name):
     except Exception as e:
         st.error(f"Error cargando la hoja '{ws_name}': {e}")
         return pd.DataFrame()
+
