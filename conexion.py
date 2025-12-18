@@ -41,42 +41,34 @@ def get_gspread_client():
     creds = dict(st.secrets["gcp_service_account"])
     raw_key = creds.get("private_key", "")
 
-    # --- LIMPIEZA POR EXPRESIÓN REGULAR ---
-    # 1. Extraer solo lo que está entre los guiones (el cuerpo de la llave)
+    # 1. Limpieza total con Regex
     header = "-----BEGIN PRIVATE KEY-----"
     footer = "-----END PRIVATE KEY-----"
     
-    # Buscamos el contenido base64 ignorando encabezado y pie
+    # Extraemos el contenido entre guiones
     content_match = re.search(f"{header}(.*?){footer}", raw_key, re.DOTALL)
-    
-    if content_match:
-        content = content_match.group(1)
-    else:
-        # Si no hay guiones, tratamos toda la cadena como contenido
-        content = raw_key
+    content = content_match.group(1) if content_match else raw_key
 
-    # 2. Filtrar: Quedarse SOLO con caracteres A-Z, a-z, 0-9, +, / y =
-    # Esto elimina \n, espacios, comillas, barras invertidas, etc.
+    # Solo caracteres validos de Base64
     content = "".join(re.findall(r'[A-Za-z0-9+/=]', content))
 
-    # 3. Reparar Padding (El corazón del error)
-    # Base64 requiere que la longitud sea múltiplo de 4
+    # 2. ALERTA DE LONGITUD (Puntual para tu error actual)
+    if len(content) < 1000:
+        st.error(f"⚠️ La llave es demasiado corta ({len(content)} caracteres). Debe tener aprox. 1600. Por favor, vuelve a copiarla completa del JSON original.")
+        st.stop()
+
+    # 3. Reparar Padding
     while len(content) % 4 != 0:
         content += "="
 
-    # 4. Reconstrucción RSA Estándar (Saltos de línea cada 64 caracteres)
+    # 4. Formatear para Google
     formatted_content = "\n".join([content[i:i+64] for i in range(0, len(content), 64)])
-    fixed_key = f"{header}\n{formatted_content}\n{footer}"
-
-    creds["private_key"] = fixed_key
+    creds["private_key"] = f"{header}\n{formatted_content}\n{footer}"
 
     try:
         return gspread.service_account_from_dict(creds)
     except Exception as e:
         st.error(f"Error persistente en gspread: {e}")
-        # Muestra los primeros y últimos 10 caracteres para verificar que no esté vacía
-        if len(content) > 20:
-            st.info(f"Diagnóstico: Llave procesada correctamente ({len(content)} chars).")
         st.stop()
 
 @st.cache_data(ttl=300)
@@ -96,5 +88,6 @@ def load_data(ws_name):
     except Exception as e:
         st.error(f"Error cargando la hoja '{ws_name}': {e}")
         return pd.DataFrame()
+
 
 
