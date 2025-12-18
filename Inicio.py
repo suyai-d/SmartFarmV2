@@ -79,5 +79,5 @@ else:
     if st.button("Ir a Registro de Clientes"):
         st.switch_page("pages/1_Cliente_SmartFarm.py")
 
-st.markdown("<br><footer style='text-align: center; color: gray;'>SmartFarm Dashboard © 2024 - Conci</footer>",
+st.markdown("<br><footer style='text-align: center; color: gray;'>SmartFarm Dashboard © 2026 - Conci</footer>",
             unsafe_allow_html=True)
