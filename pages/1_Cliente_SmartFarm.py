@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 from datetime import datetime
-# Importamos lo necesario centralizado desde conexion.py
 from conexion import (
     load_data,
     get_gspread_client,
@@ -25,7 +24,7 @@ EVALUATION_CATEGORIES = ["Granos", "Ganadería", "Cultivos de Alto Valor"]
 BRANCHES = ["Córdoba", "Pilar", "Sinsacate", "Arroyito", "Santa Rosa"]
 CLIENT_TYPES = ["Tipo 1", "Tipo 2", "Tipo 3"]
 
-# Diccionario de evaluación (Mantenemos la estructura de items)
+# EVALUATION_MAP se mantiene igual (es tu configuración de entrada)
 EVALUATION_MAP = {
     "Granos": {
         "worksheet": "Granos",
@@ -96,9 +95,14 @@ def get_row_index(worksheet, id_cliente, timestamp):
     data = worksheet.get_all_values()
     if not data: return None
     df_idx = pd.DataFrame(data[1:], columns=data[0])
-    # Normalizamos para búsqueda segura
+    # Normalizamos columnas para búsqueda segura: 'ID CLIENTE' y 'FECHA DE REGISTRO'
     df_idx.columns = [c.strip().upper() for c in df_idx.columns]
-    match = df_idx[(df_idx['ID CLIENTE'].astype(str) == str(id_cliente)) & (df_idx['FECHA Y HORA'] == timestamp)]
+
+    # IMPORTANTE: Usamos los nombres normalizados en mayúsculas
+    match = df_idx[
+        (df_idx['ID CLIENTE'].astype(str) == str(id_cliente)) &
+        (df_idx['FECHA Y HORA'].astype(str) == str(timestamp))
+        ]
     return match.index[0] + 2 if not match.empty else None
 
 
@@ -109,7 +113,7 @@ st.title("🚜 Gestión de Clientes SmartFarm")
 
 t1, t2, t3 = st.tabs(["➕ Registro", "✏️ Modificar", "📊 Análisis"])
 
-# --- TAB 1: REGISTRO ---
+# --- TAB 1: REGISTRO (Misma lógica) ---
 with t1:
     st.header("Nuevo Registro")
     cat_seleccionada = st.selectbox("Categoría de Evaluación", EVALUATION_CATEGORIES, key="cat_reg")
@@ -141,7 +145,9 @@ with t1:
                     client = get_gspread_client()
                     sh = client.open_by_key(SHEET_ID)
 
+                    # Guardar en Hoja Principal
                     sh.worksheet(MAIN_WORKSHEET_NAME).append_row([now, cat_seleccionada, id_c, nom, suc, tip, total])
+                    # Guardar en Hoja Detalle
                     sh.worksheet(EVALUATION_MAP[cat_seleccionada]["worksheet"]).append_row(
                         [now, id_c] + list(scores.values()))
 
@@ -152,11 +158,12 @@ with t1:
             else:
                 st.warning("Complete ID (6 dígitos) y Nombre.")
 
-# --- TAB 2: MODIFICAR ---
+# --- TAB 2: MODIFICAR (Corregido con Mayúsculas) ---
 with t2:
     df_m = load_data(MAIN_WORKSHEET_NAME)
     if not df_m.empty:
-        df_m['LABEL'] = df_m['ID CLIENTE'].astype(str) + " - " + df_m['CLIENTE']
+        # Usamos nombres en mayúsculas: 'ID CLIENTE' y 'CLIENTE'
+        df_m['LABEL'] = df_m['ID CLIENTE'].astype(str) + " - " + df_m['CLIENTE'].astype(str)
         choice = st.selectbox("Seleccione para editar", ["..."] + df_m['LABEL'].tolist())
 
         if choice != "...":
@@ -165,8 +172,12 @@ with t2:
 
             # Cargar datos de la hoja específica
             df_detail = load_data(EVALUATION_MAP[cat]["worksheet"])
-            detail_match = df_detail[(df_detail['ID CLIENTE'].astype(str) == str(sel_row['ID CLIENTE'])) &
-                                     (df_detail['FECHA Y HORA'] == sel_row['FECHA Y HORA'])]
+
+            # Filtro corregido con Mayúsculas
+            detail_match = df_detail[
+                (df_detail['ID CLIENTE'].astype(str) == str(sel_row['ID CLIENTE'])) &
+                (df_detail['FECHA Y HORA'].astype(str) == str(sel_row['FECHA Y HORA']))
+                ]
 
             if not detail_match.empty:
                 ev_row = detail_match.iloc[0]
@@ -178,7 +189,9 @@ with t2:
                     new_scores = {}
                     cols_ed = st.columns(2)
                     for i, (name, max_s, _) in enumerate(EVALUATION_MAP[cat]["items"]):
-                        val = int(ev_row.get(name.strip().upper(), 0))
+                        # El nombre del item se busca en mayúsculas en el DataFrame
+                        col_name = name.strip().upper()
+                        val = int(ev_row.get(col_name, 0))
                         with cols_ed[i % 2]:
                             new_scores[name] = st.slider(name, 0, max_s, val, key=f"mod_{i}")
 
@@ -199,10 +212,12 @@ with t2:
                             ws2 = sh.worksheet(EVALUATION_MAP[cat]["worksheet"])
                             idx2 = get_row_index(ws2, sel_row['ID CLIENTE'], sel_row['FECHA Y HORA'])
                             if idx2:
+                                # Obtenemos headers de la hoja real para saber la columna exacta
                                 headers = [h.strip().upper() for h in ws2.row_values(1)]
                                 for k, v in new_scores.items():
                                     if k.strip().upper() in headers:
-                                        ws2.update_cell(idx2, headers.index(k.strip().upper()) + 1, v)
+                                        col_idx = headers.index(k.strip().upper()) + 1
+                                        ws2.update_cell(idx2, col_idx, v)
 
                             st.success("¡Datos actualizados!")
                             st.cache_data.clear()
@@ -216,7 +231,7 @@ with t2:
 with t3:
     df_a = load_data(MAIN_WORKSHEET_NAME)
     if not df_a.empty:
-        target = COL_PUNTAJE.upper()
+        target = COL_PUNTAJE.upper()  # Esto ya es "PUNTAJE TOTAL SMARTFARM"
         df_a[target] = pd.to_numeric(df_a[target], errors='coerce').fillna(0)
 
         # Filtros rápidos
@@ -224,10 +239,15 @@ with t3:
         f_cat = c1.multiselect("Categorías", EVALUATION_CATEGORIES, default=EVALUATION_CATEGORIES)
         f_suc = c2.multiselect("Sucursales", BRANCHES, default=BRANCHES)
 
+        # Filtro corregido con nombres en Mayúsculas
         df_f = df_a[df_a['CATEGORÍA DE EVALUACIÓN'].isin(f_cat) & df_a['SUCURSAL'].isin(f_suc)]
 
-        st.plotly_chart(
-            px.bar(df_f.sort_values(target), x=target, y='CLIENTE', color='CATEGORÍA DE EVALUACIÓN', orientation='h',
-                   title="Ranking de Clientes"), use_container_width=True)
+        if not df_f.empty:
+            st.plotly_chart(
+                px.bar(df_f.sort_values(target), x=target, y='CLIENTE', color='CATEGORÍA DE EVALUACIÓN',
+                       orientation='h',
+                       title="Ranking de Clientes"), use_container_width=True)
+        else:
+            st.info("No hay datos que coincidan con los filtros.")
     else:
         st.info("Registre clientes para ver el análisis.")
