@@ -4,159 +4,174 @@ import plotly.express as px
 from datetime import datetime
 from conexion import load_data, get_gspread_client, SHEET_ID, MAIN_WORKSHEET_NAME
 
-# -----------------------------------------------------------
-# CONFIGURACIÓN INICIAL
-# -----------------------------------------------------------
+# 1. CONFIGURACIÓN INICIAL
 st.set_page_config(layout="wide", page_title="Gestión de Ventas SmartFarm", page_icon="💰")
 
-# Nombre de la hoja en tu Google Sheet
 SALES_WORKSHEET_NAME = "Ventas SmartFarm"
 TIPO_VENTA_OPTIONS = ["Componente", "Licencia", "Servicio"]
 ESTADO_VENTA_OPTIONS = ["Posible", "Cerrado", "Perdido"]
 
+# --- MAPEO DE COLUMNAS REALES (Según tu Google Sheets) ---
+COL_FECHA = "FECHA DE REGISTRO"
+COL_ID = "ID CLIENTE"
+COL_CLIENTE = "CLIENTE"
+COL_TIPO = "TIPO DE VENTA"
+COL_ESTADO = "ESTADO DE LA VENTA"
+COL_MONTO = "MONTO"
+COL_DETALLE = "DETALLE DE LA OPORTUNIDAD/VENTA"
 
-# -----------------------------------------------------------
-# FUNCIONES DE DATOS ESPECÍFICAS
-# -----------------------------------------------------------
 
-@st.cache_data(ttl=60)
-def get_sales_data_ui():
-    """Carga datos de ventas normalizando columnas a MAYÚSCULAS y GUIONES_BAJOS."""
-    df = load_data(SALES_WORKSHEET_NAME)
-    if not df.empty:
-        # Normalización estricta: Espacios por guiones y todo a Mayúsculas
-        df.columns = [str(c).replace(" ", "_").strip().upper() for c in df.columns]
-
-        # Asegurar que MONTO sea numérico para cálculos
-        if 'MONTO' in df.columns:
-            df['MONTO'] = pd.to_numeric(df['MONTO'], errors='coerce').fillna(0.0)
-
-        # Índice para futuras ediciones
-        df['__ROW_INDEX'] = df.index + 2
+def normalizar_df(df):
+    """Limpia encabezados: quita espacios y pasa a MAYÚSCULAS."""
+    if df is not None and not df.empty:
+        df.columns = [str(c).strip().upper() for c in df.columns]
+        if COL_MONTO in df.columns:
+            df[COL_MONTO] = pd.to_numeric(df[COL_MONTO], errors='coerce').fillna(0.0)
     return df
 
 
-def save_new_sale(sale_data):
-    """Guarda una nueva fila en la hoja de ventas."""
-    try:
-        client = get_gspread_client()
-        worksheet = client.open_by_key(SHEET_ID).worksheet(SALES_WORKSHEET_NAME)
-        worksheet.append_row(list(sale_data.values()))
-        st.cache_data.clear()
-        return True
-    except Exception as e:
-        st.error(f"Error al guardar: {e}")
-        return False
-
-
-# -----------------------------------------------------------
-# INTERFAZ DE USUARIO
-# -----------------------------------------------------------
-
 st.title("💰 Gestión de Oportunidades y Ventas SmartFarm")
 
-# Cargamos datos de ambas hojas
-main_df = load_data(MAIN_WORKSHEET_NAME)
-sales_df = get_sales_data_ui()
-
-if main_df.empty:
-    st.warning("⚠️ No se encontraron datos en la Hoja Principal.")
-    st.stop()
-
-# Preparar opciones de clientes (Usando nombres normalizados de conexion.py)
-main_df['SELECTOR'] = main_df['ID CLIENTE'].astype(str) + " - " + main_df['CLIENTE'].astype(str)
-client_options = ["Selecciona un cliente"] + main_df['SELECTOR'].unique().tolist()
+# Carga de datos
+main_df = normalizar_df(load_data(MAIN_WORKSHEET_NAME))
+sales_df = normalizar_df(load_data(SALES_WORKSHEET_NAME))
 
 tab_reg, tab_manage, tab_analysis = st.tabs(["➕ Registrar Venta", "✏️ Gestionar Estados", "📊 Análisis"])
 
 # --- TAB 1: REGISTRO ---
 with tab_reg:
-    with st.form("reg_form", clear_on_submit=True):
-        col1, col2 = st.columns(2)
-        cliente_sel = col1.selectbox("Cliente:", client_options)
-        tipo = col2.selectbox("Tipo de Venta:", TIPO_VENTA_OPTIONS)
+    if not main_df.empty:
+        main_df['SELECTOR'] = main_df['ID CLIENTE'].astype(str) + " - " + main_df['CLIENTE'].astype(str)
+        client_options = ["Selecciona un cliente"] + main_df['SELECTOR'].unique().tolist()
 
-        col3, col4 = st.columns(2)
-        monto = col3.number_input("Monto Estimado (USD):", min_value=0.0, step=100.0)
-        estado = col4.selectbox("Estado:", ESTADO_VENTA_OPTIONS)
+        with st.form("reg_form", clear_on_submit=True):
+            col1, col2 = st.columns(2)
+            cliente_sel = col1.selectbox("Cliente:", client_options)
+            tipo = col2.selectbox("Tipo de Venta:", TIPO_VENTA_OPTIONS)
 
-        detalle = st.text_area("Detalle de la oportunidad:")
+            col3, col4 = st.columns(2)
+            monto = col3.number_input("Monto Estimado (USD):", min_value=0.0, step=100.0)
+            estado = col4.selectbox("Estado:", ESTADO_VENTA_OPTIONS)
 
-        if st.form_submit_button("Registrar en Embudo"):
-            if cliente_sel == "Selecciona un cliente":
-                st.error("Por favor selecciona un cliente.")
-            else:
-                # Separamos el ID y el Nombre
-                partes = cliente_sel.split(" - ")
-                id_c = partes[0]
-                nom_c = partes[1]
+            detalle = st.text_area("Detalle de la oportunidad:")
 
-                nueva_data = {
-                    "Fecha": datetime.now().strftime("%Y-%m-%d"),
-                    "ID Cliente": id_c,
-                    "Cliente": nom_c,
-                    "Tipo": tipo,
-                    "Estado": estado,
-                    "Monto": monto,
-                    "Detalle": detalle
-                }
-                if save_new_sale(nueva_data):
-                    st.success("¡Venta registrada con éxito!")
-                    st.rerun()
+            if st.form_submit_button("Registrar en Embudo"):
+                if cliente_sel == "Selecciona un cliente":
+                    st.error("Por favor selecciona un cliente.")
+                else:
+                    partes = cliente_sel.split(" - ")
+                    # Fila ordenada: Fecha, ID, Cliente, Tipo, Estado, Monto, Detalle
+                    nueva_fila = [
+                        datetime.now().strftime("%d/%m/%Y"),
+                        partes[0], partes[1], tipo, estado, monto, detalle
+                    ]
+                    try:
+                        client = get_gspread_client()
+                        ws = client.open_by_key(SHEET_ID).worksheet(SALES_WORKSHEET_NAME)
+                        ws.append_row(nueva_fila)
+                        st.success("¡Venta registrada con éxito!")
+                        st.cache_data.clear()
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"Error al guardar: {e}")
+
+# --- TAB 2: GESTIONAR ESTADOS (EDICIÓN) ---
+with tab_manage:
+    if not sales_df.empty:
+        # Selector para identificar la venta
+        sales_df['SELECTOR_EDIT'] = sales_df[COL_CLIENTE].astype(str) + " | " + \
+                                    sales_df[COL_TIPO].astype(str) + " | $" + \
+                                    sales_df[COL_MONTO].astype(str)
+
+        venta_sel = st.selectbox("Seleccione la venta para actualizar:", [""] + sales_df['SELECTOR_EDIT'].tolist())
+
+        if venta_sel:
+            idx = sales_df[sales_df['SELECTOR_EDIT'] == venta_sel].index[0]
+            row = sales_df.iloc[idx]
+
+            with st.form("form_edit_venta"):
+                st.info(f"Actualizando oportunidad de: **{row[COL_CLIENTE]}**")
+                c1, c2, c3 = st.columns(3)
+
+                # Estado actual (normalizado para el buscador)
+                est_actual = str(row[COL_ESTADO]).capitalize()
+                nuevo_estado = c1.selectbox("Nuevo Estado:", ESTADO_VENTA_OPTIONS,
+                                            index=ESTADO_VENTA_OPTIONS.index(
+                                                est_actual) if est_actual in ESTADO_VENTA_OPTIONS else 0)
+
+                nuevo_monto = c2.number_input("Monto Actualizado (USD):", value=float(row[COL_MONTO]))
+
+                tipo_actual = str(row[COL_TIPO]).capitalize()
+                nuevo_tipo = c3.selectbox("Tipo de Venta:", TIPO_VENTA_OPTIONS,
+                                          index=TIPO_VENTA_OPTIONS.index(
+                                              tipo_actual) if tipo_actual in TIPO_VENTA_OPTIONS else 0)
+
+                nuevo_detalle = st.text_area("Detalle actualizado:", value=row.get(COL_DETALLE, ""))
+
+                if st.form_submit_button("Guardar Cambios"):
+                    try:
+                        client = get_gspread_client()
+                        ws = client.open_by_key(SHEET_ID).worksheet(SALES_WORKSHEET_NAME)
+                        row_num = int(idx) + 2
+
+                        # Actualización de celdas (D=4, E=5, F=6, G=7)
+                        ws.update_cell(row_num, 4, nuevo_tipo)
+                        ws.update_cell(row_num, 5, nuevo_estado)
+                        ws.update_cell(row_num, 6, nuevo_monto)
+                        ws.update_cell(row_num, 7, nuevo_detalle)
+
+                        st.success("¡Venta actualizada!")
+                        st.cache_data.clear()
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"Error al conectar con Google Sheets: {e}")
+    else:
+        st.info("No hay ventas registradas para gestionar.")
 
 # --- TAB 3: ANÁLISIS ---
 with tab_analysis:
     if not sales_df.empty:
-        # Detectar nombres de columnas de forma flexible por si cambian en el Excel
-        col_estado = 'ESTADO' if 'ESTADO' in sales_df.columns else 'ESTADO_DE_LA_VENTA'
-        col_tipo = 'TIPO' if 'TIPO' in sales_df.columns else 'TIPO_DE_VENTA'
+        # Cálculos Robustos (Insensibles a mayúsculas en el contenido)
+        total_pipeline = sales_df[COL_MONTO].sum()
 
-        # KPIs Principales
-        total_pipeline = sales_df['MONTO'].sum()
+        # Filtro de ganadas comparando en mayúsculas
+        ganadas_df = sales_df[sales_df[COL_ESTADO].astype(str).str.upper() == 'CERRADO']
+        monto_ganado = ganadas_df[COL_MONTO].sum()
 
-        # Filtro para ventas ganadas (insensible a mayúsculas en el contenido)
-        cerrado_df = sales_df[sales_df[col_estado].astype(str).str.upper() == 'CERRADO']
-        monto_cerrado = cerrado_df['MONTO'].sum()
+        tasa_conversion = (len(ganadas_df) / len(sales_df)) * 100 if len(sales_df) > 0 else 0
 
-        tasa_conversion = (len(cerrado_df) / len(sales_df)) * 100 if len(sales_df) > 0 else 0
-
+        # KPIs
         k1, k2, k3 = st.columns(3)
         k1.metric("Pipeline Total", f"USD {total_pipeline:,.0f}")
-        k2.metric("Ventas Cerradas", f"USD {monto_cerrado:,.0f}")
-        k3.metric("Efectividad", f"{tasa_conversion:.1f}%")
+        k2.metric("Ventas Cerradas", f"USD {monto_ganado:,.0f}")
+        k3.metric("Efectividad Cierre", f"{tasa_conversion:.1f}%")
 
         st.divider()
 
         # Gráficos
+        col_g1, col_g2 = st.columns(2)
 
-        c_g1, c_g2 = st.columns(2)
+        with col_g1:
+            # Normalizamos temporalmente para el gráfico para que el color_map coincida
+            plot_df = sales_df.copy()
+            plot_df[COL_ESTADO] = plot_df[COL_ESTADO].astype(str).str.upper()
 
-        with c_g1:
             fig_pie = px.pie(
-                sales_df,
-                names=col_estado,
-                values='MONTO',
-                title="Distribución de Montos por Estado",
-                color=col_estado,
+                plot_df, names=COL_ESTADO, values=COL_MONTO,
+                title="Montos por Estado de Venta",
+                color=COL_ESTADO,
                 color_discrete_map={'CERRADO': '#28a745', 'POSIBLE': '#ffc107', 'PERDIDO': '#dc3545'}
             )
             st.plotly_chart(fig_pie, use_container_width=True)
 
-        with c_g2:
+        with col_g2:
             fig_bar = px.bar(
-                sales_df,
-                x=col_tipo,
-                y='MONTO',
-                color=col_estado,
-                title="Oportunidades por Tipo de Venta",
-                barmode='group'
+                sales_df, x=COL_TIPO, y=COL_MONTO, color=COL_ESTADO,
+                title="Oportunidades por Tipo", barmode='group'
             )
             st.plotly_chart(fig_bar, use_container_width=True)
 
-        st.subheader("📋 Listado Detallado de Oportunidades")
-        # Mostramos la tabla sin la columna técnica de índice
-        cols_to_show = [c for c in sales_df.columns if c != '__ROW_INDEX']
-        st.dataframe(sales_df[cols_to_show], use_container_width=True)
-
+        st.subheader("📋 Listado Detallado")
+        st.dataframe(sales_df, use_container_width=True, hide_index=True)
     else:
-        st.info("No hay datos de ventas registrados para mostrar en el análisis.")
+        st.info("No hay datos de ventas para analizar.")
