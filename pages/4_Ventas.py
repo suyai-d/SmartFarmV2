@@ -5,7 +5,7 @@ from datetime import datetime
 from conexion import load_data, get_gspread_client, SHEET_ID, MAIN_WORKSHEET_NAME
 
 # 1. CONFIGURACIÓN INICIAL
-st.set_page_config(layout="wide", page_title="Gestión de Ventas SmartFarm", page_icon="💰")
+st.set_page_config(layout="wide", page_title="Gestión de Ventas SmartFarm", page_icon="sf1.png")
 
 SALES_WORKSHEET_NAME = "Ventas SmartFarm"
 TIPO_VENTA_OPTIONS = ["Componente", "Licencia", "Servicio"]
@@ -175,3 +175,5 @@ with tab_analysis:
         st.dataframe(sales_df, use_container_width=True, hide_index=True)
     else:
         st.info("No hay datos de ventas para analizar.")
+
+st.link_button("📂 Acceder a Carpeta de Evidencias (Drive)", "https://drive.google.com/drive/folders/1ojOeFXuiPof9R0qTL9BPeipig9pwOdzW?usp=sharing")
