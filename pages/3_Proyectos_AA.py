@@ -182,3 +182,5 @@ with tab3:
             st.dataframe(resumen, use_container_width=True, hide_index=True)
             st.plotly_chart(px.bar(resumen, x='SUCURSAL', y='HORAS', title="Esfuerzo por Sucursal",
                                    color_discrete_sequence=['#28a745']), use_container_width=True)
+
+st.link_button("📂 Acceder a Carpeta de Evidencias (Drive)", "https://drive.google.com/drive/folders/1ojOeFXuiPof9R0qTL9BPeipig9pwOdzW?usp=sharing")
