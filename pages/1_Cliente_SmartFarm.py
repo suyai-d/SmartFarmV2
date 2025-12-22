@@ -157,6 +157,8 @@ with t1:
                     st.error(f"Error: {e}")
             else:
                 st.warning("Complete ID (6 dígitos) y Nombre.")
+    st.link_button("📂 Acceder a Carpeta de Evidencias (Drive)",
+                   "https://drive.google.com/drive/folders/1ojOeFXuiPof9R0qTL9BPeipig9pwOdzW?usp=sharing")
 
 # --- TAB 2: MODIFICAR (Corregido con Mayúsculas) ---
 with t2:
@@ -226,6 +228,9 @@ with t2:
                             st.error(f"Error: {e}")
     else:
         st.info("Sin datos.")
+
+    st.link_button("📂 Acceder a Carpeta de Evidencias (Drive)",
+                   "https://drive.google.com/drive/folders/1ojOeFXuiPof9R0qTL9BPeipig9pwOdzW?usp=sharing")
 
 # --- TAB 3: ANÁLISIS ---
 with t3:
