@@ -65,10 +65,10 @@ if not df.empty:
     # Instrucciones de navegación
     st.info("""
     **Guía de Navegación:**
-    * **1_Cliente_SmartFarm:** Registra nuevos clientes o edita sus puntajes.
-    * **2_Reporte_Cliente:** Genera un análisis visual detallado (Gráfico Radar) para un cliente específico.
-    * **3_Proyectos_AA:** Seguimiento de implementaciones y proyectos Analyzer.
-    * **4_Ventas:** Gestión de oportunidades comerciales detectadas.
+    * **Cliente SmartFarm:** Registra nuevos clientes o edita sus puntajes.
+    * **Reporte Cliente:** Genera un análisis visual detallado (Gráfico Radar) para un cliente específico.
+    * **Proyectos Agronomy Analyzer:** Seguimiento de implementaciones y proyectos Analyzer.
+    * **Ventas:** Gestión de oportunidades comerciales detectadas.
     """)
 
 else:
@@ -79,5 +79,8 @@ else:
     if st.button("Ir a Registro de Clientes"):
         st.switch_page("pages/1_Cliente_SmartFarm.py")
 
+st.link_button("📂 Acceder a Carpeta de SmartFarm (Drive)", "https://drive.google.com/drive/folders/1YhZgrnVi4xSrIeV8kK0klSEyG-nzxDxr?usp=sharing")
+
 st.markdown("<br><footer style='text-align: center; color: gray;'>SmartFarm Dashboard © 2026 - Conci</footer>",
             unsafe_allow_html=True)
+
