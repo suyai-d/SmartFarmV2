@@ -56,7 +56,7 @@ if not df.empty:
         df,
         x=target_col,
         nbins=10,
-        title="Distribución de Puntajes (Nivel de Adopción)",
+        title="Distribución de Puntajes",
         color_discrete_sequence=['#28a745'],
         labels={target_col: "Puntaje"}
     )
