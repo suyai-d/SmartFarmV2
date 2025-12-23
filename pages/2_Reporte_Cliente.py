@@ -47,7 +47,7 @@ EVALUATION_MAP = {
             ("Item 7: Uso de Operations Center Mobile.", 10),
             ("Item 8: JDLink activado en máquinas John Deere.", 10),
             ("Item 9: Planes de mantenimiento en tractores.", 10),
-            ("Item 10: Mapeo de constituyentes.", 20),
+            ("Item 10: Mapeo de con-stituyentes.", 20),
             ("Item 11: Conectividad alimentación.", 20),
             ("Item 12: Generación de informes.", 10),
             ("Item 13: Paquete contratado con el concesionario (CSC).", 10),
@@ -92,7 +92,7 @@ def generar_pdf(nombre_cliente, categoria, score, score_max, tabla_data, recomen
     # Título Principal
     pdf.set_font("Arial", 'B', 16)
     pdf.set_text_color(40, 167, 69)
-    pdf.cell(190, 10, "Reporte de Adopcion Tecnologica SmartFarm", 0, 1, 'C')
+    pdf.cell(190, 10, "Reporte SmartFarm", 0, 1, 'C')
     pdf.ln(5)
 
     # Datos Generales
@@ -104,7 +104,7 @@ def generar_pdf(nombre_cliente, categoria, score, score_max, tabla_data, recomen
     pdf.set_font("Arial", '', 12)
     pdf.cell(95, 10, f"Puntaje Obtenido: {score:.0f} / {score_max:.0f}", 0, 0)
     perc = (score / score_max * 100) if score_max > 0 else 0
-    pdf.cell(95, 10, f"Nivel de Adopcion: {perc:.1f}%", 0, 1)
+    pdf.cell(95, 10, f"Estado de Avance: {perc:.1f}%", 0, 1)
     pdf.ln(10)
 
     # Tabla de Resultados
@@ -193,7 +193,7 @@ if seleccion != "Seleccione un registro...":
             k1, k2, k3 = st.columns(3)
             k1.metric("Puntaje Obtenido", f"{score_obt:.0f} pts")
             k2.metric("Potencial Máximo", f"{score_max:.0f} pts")
-            k3.metric("Nivel de Adopción", f"{(score_obt / score_max * 100):.1f}%")
+            k3.metric("Estado de Avance", f"{(score_obt / score_max * 100):.1f}%")
 
             # Radar Chart
             st.subheader("📊 Gráfico de Fortalezas")
@@ -238,4 +238,3 @@ if seleccion != "Seleccione un registro...":
 
     except Exception as e:
         st.error(f"Error al procesar el reporte: {e}")
-
