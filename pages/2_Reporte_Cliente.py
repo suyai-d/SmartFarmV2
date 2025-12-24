@@ -47,7 +47,7 @@ EVALUATION_MAP = {
             ("Item 7: Uso de Operations Center Mobile.", 10),
             ("Item 8: JDLink activado en máquinas John Deere.", 10),
             ("Item 9: Planes de mantenimiento en tractores.", 10),
-            ("Item 10: Mapeo de con-stituyentes.", 20),
+            ("Item 10: Mapeo de constituyentes.", 20),
             ("Item 11: Conectividad alimentación.", 20),
             ("Item 12: Generación de informes.", 10),
             ("Item 13: Paquete contratado con el concesionario (CSC).", 10),
@@ -238,3 +238,4 @@ if seleccion != "Seleccione un registro...":
 
     except Exception as e:
         st.error(f"Error al procesar el reporte: {e}")
+
