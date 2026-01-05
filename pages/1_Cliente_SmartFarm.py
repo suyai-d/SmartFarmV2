@@ -120,7 +120,7 @@ with t1:
 
     with st.form("f_reg_cliente", clear_on_submit=True):
         c1, c2 = st.columns(2)
-        id_c = c1.text_input("ID Cliente (6 dígitos)", max_chars=6)
+        id_c = c1.text_input("ID Cliente (7 dígitos)", max_chars=7)
         nom = c2.text_input("Razón Social")
 
         c3, c4 = st.columns(2)
@@ -138,7 +138,7 @@ with t1:
                 with st.expander("Ayuda"): st.write(desc)
 
         if st.form_submit_button("✅ Guardar"):
-            if len(id_c) == 6 and nom:
+            if len(id_c) == 7 and nom:
                 try:
                     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                     total = sum(scores.values())
@@ -156,7 +156,7 @@ with t1:
                 except Exception as e:
                     st.error(f"Error: {e}")
             else:
-                st.warning("Complete ID (6 dígitos) y Nombre.")
+                st.warning("Complete ID (7 dígitos) y Nombre.")
     st.link_button("📂 Acceder a Carpeta de Evidencias (Drive)",
                    "https://drive.google.com/drive/folders/1ojOeFXuiPof9R0qTL9BPeipig9pwOdzW?usp=sharing")
 
@@ -320,3 +320,4 @@ with t3:
             st.info("No hay datos que coincidan con los filtros seleccionados.")
     else:
         st.info("Registre clientes para habilitar el panel de análisis.")
+
