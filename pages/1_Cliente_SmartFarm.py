@@ -232,7 +232,7 @@ with t2:
     st.link_button("📂 Acceder a Carpeta de Evidencias (Drive)",
                    "https://drive.google.com/drive/folders/1ojOeFXuiPof9R0qTL9BPeipig9pwOdzW?usp=sharing")
 
-# --- TAB 3: ANÁLISIS ---
+# --- TAB 3: DASHBOARD ---
 with t3:
     df_a = load_data(MAIN_WORKSHEET_NAME)
     if not df_a.empty:
@@ -240,6 +240,7 @@ with t3:
         target = COL_PUNTAJE.upper()  # "PUNTAJE TOTAL SMARTFARM"
         col_cat = 'CATEGORÍA DE EVALUACIÓN'
         col_suc = 'SUCURSAL'
+        META_CERTIFICACION = 105
 
         df_a[target] = pd.to_numeric(df_a[target], errors='coerce').fillna(0)
 
@@ -251,7 +252,7 @@ with t3:
         df_f = df_a[df_a[col_cat].isin(f_cat) & df_a[col_suc].isin(f_suc)]
 
         if not df_f.empty:
-            # 1. Gráfico de Ranking (Existente)
+            # 1. Gráfico de Ranking Individual
             st.plotly_chart(
                 px.bar(df_f.sort_values(target, ascending=True),
                        x=target, y='CLIENTE', color=col_cat,
@@ -260,64 +261,74 @@ with t3:
 
             st.divider()
 
-            # --- NUEVA SECCIÓN: ANÁLISIS POR CATEGORÍA ---
+            # --- ANÁLISIS POR CATEGORÍA ---
             st.subheader("📊 Análisis por Categoría")
             col_g1, col_g2 = st.columns(2)
 
             with col_g1:
-                # Gráfico de Torta: Cantidad de Inscriptos por Categoría
-                fig_pie = px.pie(df_f, names=col_cat,
-                                 title="📦 Inscriptos por Categoría",
-                                 hole=0.4,  # Estilo dona
-                                 color_discrete_sequence=px.colors.qualitative.Pastel)
+                fig_pie = px.pie(df_f, names=col_cat, title="📦 Inscriptos por Categoría",
+                                 hole=0.4, color_discrete_sequence=px.colors.qualitative.Pastel)
                 st.plotly_chart(fig_pie, use_container_width=True)
 
             with col_g2:
-                # Gráfico de Barras: Puntaje Acumulado y Promedio por Categoría
                 stats_cat = df_f.groupby(col_cat)[target].agg(['sum', 'mean']).reset_index()
                 stats_cat.columns = [col_cat, 'Puntaje Acumulado', 'Puntaje Promedio']
-
                 fig_bar_cat = px.bar(stats_cat, x=col_cat, y=['Puntaje Acumulado', 'Puntaje Promedio'],
-                                     barmode='group',
-                                     title="📈 Rendimiento por Categoría (Total vs Promedio)",
-                                     labels={'value': 'Puntos', 'variable': 'Métrica'})
+                                     barmode='group', title="📈 Rendimiento por Categoría")
                 st.plotly_chart(fig_bar_cat, use_container_width=True)
 
             st.divider()
 
-            # --- NUEVA SECCIÓN: ANÁLISIS POR SUCURSAL ---
-            st.subheader("🏢 Desempeño por Sucursal")
+            # --- NUEVA SECCIÓN: DESEMPEÑO Y CERTIFICACIÓN POR SUCURSAL ---
+            st.subheader("🏢 Desempeño y Certificación por Sucursal")
 
-            # Cálculo de tabla resumen por sucursal
-            # Contamos clientes, sumamos puntos y promediamos
-            stats_suc = df_f.groupby(col_suc)[target].agg(['count', 'sum', 'mean']).reset_index()
+            # 1. Creamos una columna booleana para saber quién certificó
+            df_f['CERTIFICA'] = df_f[target] >= META_CERTIFICACION
 
-            # Renombramos para que sea legible en la tabla
+            # 2. Agrupamos y calculamos las métricas
+            stats_suc = df_f.groupby(col_suc).agg(
+                Cantidad_Inscriptos=(target, 'count'),
+                Puntaje_Promedio=(target, 'mean'),
+                Cant_Certificados=('CERTIFICA', 'sum') # Suma los True como 1
+            ).reset_index()
+
+            # 3. Calculamos el % de certificación
+            stats_suc['% Certificación'] = (stats_suc['Cant_Certificados'] / stats_suc['Cantidad_Inscriptos'] * 100).round(1)
+            
+            # 4. Renombramos para la visualización final
             stats_suc.columns = [
                 "Sucursal",
-                "Cantidad de Inscriptos",
-                "Puntaje Acumulado",
-                "Puntaje Promedio"
+                "Clientes Inscriptos",
+                "Promedio Pts",
+                "Certificados (>=105 pts)",
+                "% de Certificación"
             ]
 
-            # Formateamos el promedio a 1 decimal para que quede prolijo
-            stats_suc["Puntaje Promedio"] = stats_suc["Puntaje Promedio"].round(1)
-
-            # Mostramos la tabla estilizada
+            # 5. Mostramos la tabla con estilo de barra de progreso para el %
             st.dataframe(
-                stats_suc.sort_values("Puntaje Acumulado", ascending=False),
+                stats_suc.sort_values("% de Certificación", ascending=False),
+                column_config={
+                    "% de Certificación": st.column_config.ProgressColumn(
+                        "% de Certificación",
+                        help="Porcentaje de clientes que superan los 105 puntos",
+                        format="%f%%",
+                        min_value=0,
+                        max_value=100,
+                    ),
+                    "Promedio Pts": st.column_config.NumberColumn(format="%.1f")
+                },
                 use_container_width=True,
                 hide_index=True
             )
 
-            # Opcional: Una pequeña métrica resumen abajo
-            m1, m2, m3 = st.columns(3)
-            m1.metric("Líder en Inscriptos", stats_suc.loc[stats_suc['Cantidad de Inscriptos'].idxmax(), 'Sucursal'])
-            m2.metric("Líder en Puntos", stats_suc.loc[stats_suc['Puntaje Acumulado'].idxmax(), 'Sucursal'])
-            m3.metric("Mejor Promedio", f"{stats_suc['Puntaje Promedio'].max()} pts")
+            # Métrica destacada de la red
+            total_red = len(df_f)
+            total_cert = df_f['CERTIFICA'].sum()
+            porc_red = (total_cert / total_red * 100) if total_red > 0 else 0
+            
+            st.info(f"💡 **Estado de la Red:** Se han certificado **{total_cert}** de **{total_red}** clientes totales (**{porc_red:.1f}%** de efectividad).")
 
         else:
             st.info("No hay datos que coincidan con los filtros seleccionados.")
     else:
         st.info("Registre clientes para habilitar el panel de análisis.")
-
