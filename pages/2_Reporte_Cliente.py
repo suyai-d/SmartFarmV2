@@ -12,7 +12,7 @@ st.set_page_config(
     page_icon="sf1.png"
 )
 
-# --- DICCIONARIO DE EVALUACIÓN COMPLETO ---
+# --- DICCIONARIO DE EVALUACIÓN CORREGIDO (Script de Reportes) ---
 EVALUATION_MAP = {
     "Granos": {
         "worksheet": "Granos",
@@ -23,14 +23,14 @@ EVALUATION_MAP = {
             ("Item 4: Uso de planificador de trabajo.", 15),
             ("Item 5: Uso de Operations Center Mobile.", 10),
             ("Item 6: JDLink.", 5),
-            ("Item 7: Envío remoto. Mezcla de tanque.", 10),
+            ("Item 7: Envío remoto. Mezcla de tanque.", 5),
             ("Item 8: % uso de autotrac en Tractor.", 10),
             ("Item 9: % uso autotrac Cosecha.", 10),
             ("Item 10: % uso autotrac Pulverización.", 10),
             ("Item 11: Uso de funcionalidades avanzadas.", 15),
-            ("Item 12: Uso de tecnologías integradas.", 10),
-            ("Item 13: Señal de corrección StarFire.", 5),
-            ("Item 14: Paquete CSC.", 10),
+            ("Item 12: Uso de tecnologías integradas.", 15),
+            ("Item 13: Señal de corrección StarFire.", 10),
+            ("Item 14: Paquete CSC.", 5),
             ("Item 15: Vinculación de API.", 5),
             ("Item 16: JDLink en otra marca.", 15),
         ]
@@ -38,44 +38,45 @@ EVALUATION_MAP = {
     "Ganadería": {
         "worksheet": "Ganadería",
         "items": [
-            ("Item 1: Organización y estandarización de lotes.", 15),
-            ("Item 2: Digitalizar capa de siembra y mapa de picado.", 10),
-            ("Item 3: Uso de planificador de trabajo.", 20),
+            ("Item 1: Organización y estandarización de lotes.", 10),
+            ("Item 2: Labor Digitalizada", 10),
+            ("Item 3: Uso de planificador de trabajo.", 15),
             ("Item 4: Equipo registrados en el Centro de Operaciones.", 5),
             ("Item 5: Operadores registrados en el Centro de Operaciones.", 5),
             ("Item 6: Productos registrados en el Centro de Operaciones.", 5),
             ("Item 7: Uso de Operations Center Mobile.", 10),
             ("Item 8: JDLink activado en máquinas John Deere.", 10),
             ("Item 9: Planes de mantenimiento en tractores.", 10),
-            ("Item 10: Mapeo de constituyentes.", 20),
-            ("Item 11: Conectividad alimentación.", 20),
-            ("Item 12: Generación de informes.", 10),
-            ("Item 13: Paquete contratado con el concesionario (CSC).", 10),
+            ("Item 10: Mapeo de constituyentes.", 15),
+            ("Item 11: Mapeo de Corte o Henificación", 15),
+            ("Item 12: Conectividad alimentación.", 20), # Corregido ID 12
+            ("Item 13: Alertas Personalizables", 15), # Corregido ID 13
+            ("Item 14: Paquete contratado con el concesionario (CSC).", 5), # Corregido ID 14
         ]
     },
     "Cultivos de Alto Valor": {
         "worksheet": "Cultivos de Alto Valor",
         "items": [
             ("Item 1: Organización y estandarización de lotes.", 15),
-            ("Item 2: Lineas de guiado.", 5),
-            ("Item 3: Tener al menos una labor digitalizada.", 10),
-            ("Item 4: Uso de planificador de trabajo para alguna operación.", 15),
-            ("Item 5: Uso del Operations Center Mobile.", 10),
-            ("Item 6: JDLink activado en máquinas John Deere.", 10),
-            ("Item 7: % uso de autotrac en Tractor.", 20),
-            ("Item 8: Implement Guidance.", 20),
-            ("Item 9: Señal de corrección StarFire.", 10),
-            ("Item 10: Paquete contratado con el concesionario (CSC).", 10),
-            ("Item 11: Equipos Registrados en Operations Center.", 5),
-            ("Item 12: Operadores registrados en Operations Center.", 5),
-            ("Item 13: Productos registrados en el Operations Center.", 5),
-            ("Item 14: Configuración de Alertas Personalizables.", 10),
+            ("Item 2: Labor Digitalizada.", 10),
+            ("Item 3: Uso del Operations Center Mobile.", 10),
+            ("Item 4: JDLink activado en máquinas John Deere.", 10),
+            ("Item 5: Lineas de guiado", 5),
+            ("Item 6: % uso de autotrac en Tractor.", 20),
+            ("Item 7: Uso de funcionalidades avanzadas: Guiado Pasivo de Implemento", 20),
+            ("Item 8: Señal de corrección StarFire.", 10),
+            ("Item 9: Paquete contratado con el concesionario (CSC).", 5),
+            ("Item 10: Equipos Registrados en Operations Center.", 5),
+            ("Item 11: Operadores registrados en Operations Center.", 5),
+            ("Item 12: Productos registrados en el Operations Center.", 5),
+            ("Item 13: Alertas Personalizables.", 15), # Asegurate que el punto final coincida con el Sheet
+            ("Item 14: Uso del planificador de trabajo para alguna operacion.", 15),
         ]
     }
 }
 
 
-# --- FUNCIÓN GENERADORA DE PDF ---
+# --- FUNCIÓN GENERADORA DE PDF (CON SELLO DE CERTIFICACIÓN) ---
 def generar_pdf(nombre_cliente, categoria, score, score_max, tabla_data, recomendaciones):
     pdf = FPDF()
     pdf.add_page()
@@ -95,7 +96,7 @@ def generar_pdf(nombre_cliente, categoria, score, score_max, tabla_data, recomen
     pdf.cell(190, 10, "Reporte SmartFarm", 0, 1, 'C')
     pdf.ln(5)
 
-    # Datos Generales
+    # --- DATOS GENERALES ---
     pdf.set_text_color(0, 0, 0)
     pdf.set_font("Arial", 'B', 12)
     pdf.cell(95, 10, f"Cliente: {nombre_cliente}", 0, 0)
@@ -103,11 +104,30 @@ def generar_pdf(nombre_cliente, categoria, score, score_max, tabla_data, recomen
 
     pdf.set_font("Arial", '', 12)
     pdf.cell(95, 10, f"Puntaje Obtenido: {score:.0f} / {score_max:.0f}", 0, 0)
+
     perc = (score / score_max * 100) if score_max > 0 else 0
     pdf.cell(95, 10, f"Estado de Avance: {perc:.1f}%", 0, 1)
-    pdf.ln(10)
+    pdf.ln(5)
 
-    # Tabla de Resultados
+    # --- NUEVO: BLOQUE VISUAL DE CERTIFICACIÓN ---
+    pdf.set_font("Arial", 'B', 14)
+    if score >= 105:
+        # Fondo verde para Certificados
+        pdf.set_fill_color(40, 167, 69)
+        pdf.set_text_color(255, 255, 255)
+        txt_cert = "ESTADO: CLIENTE CERTIFICADO SMARTFARM"
+    else:
+        # Fondo gris claro para los que están en camino
+        pdf.set_fill_color(240, 240, 240)
+        pdf.set_text_color(100, 100, 100)
+        txt_cert = "ESTADO: EN PROCESO DE CERTIFICACIÓN"
+
+    pdf.cell(190, 12, txt_cert, 0, 1, 'C', True)
+    pdf.set_text_color(0, 0, 0)  # Volver al negro para el resto del texto
+    pdf.ln(10)
+    # ----------------------------------------------
+
+    # Tabla de Resultados (Sigue igual...)
     pdf.set_font("Arial", 'B', 10)
     pdf.set_fill_color(230, 230, 230)
     pdf.cell(130, 10, "Punto Evaluado", 1, 0, 'C', True)
@@ -137,7 +157,6 @@ def generar_pdf(nombre_cliente, categoria, score, score_max, tabla_data, recomen
         pdf.multi_cell(190, 7, recomendaciones, 0, 'L')
 
     return pdf.output(dest='S').encode('latin-1', 'ignore')
-
 
 # --- FUNCIONES DE CARGA ---
 def get_record_detailed(selected_id, selected_timestamp, category):
@@ -238,4 +257,3 @@ if seleccion != "Seleccione un registro...":
 
     except Exception as e:
         st.error(f"Error al procesar el reporte: {e}")
-
