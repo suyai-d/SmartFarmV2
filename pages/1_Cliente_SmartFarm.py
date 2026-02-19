@@ -36,14 +36,14 @@ EVALUATION_MAP = {
              "Video demostrativo de los Planes de Trabajo enviados al equipo durante los últimos 12 meses, al menos 4 meses antes de la presentación de la evidencia. **-> Consideraciones:** En los últimos 12 meses tener al menos una operación de cada una de las 3 etapas (siembra - pulverización - cosecha) en la cual se haya utilizando el planificador de trabajo. El trabajo necesariamente debe haber sido enviado al equipo y debe tener al menos un 20% de avance. Cada etapa contabiliza 5 puntos, siendo posible acumular 15 puntos al utilizar el planificador de trabajo en las 3 etapas."),
             ("Item 5: Uso de Operations Center Mobile.", 10, "Grabación de video que demuestre la navegación en la plataforma Móvil, capturando la pantalla inicial y demostrando información de al menos un equipo y un mapa agronómico y la vista del planificador de trabajo. La ausencia de cualquiera de los ítems descritos anteriormente se considerará puntuación cero para este ítem; y Video del cliente mencionando los beneficios obtenidos al utilizar el Centro de Operaciones, hablando de al menos una ganancia al utilizarlo. **-> Consideraciones:** Al ser un testimonio auténtico y reciente creado para la evaluación de este ítem describiendo la principal funcionalidad utilizada (planificador de trabajo, alertas, analizador de campo) debe incluir un testimonio del cliente y/o miembros de su equipo. Serán descalificados los vídeos grabados que demuestren operaciones del Distribuidor y/o de terceros. Vídeo con una duración mínima de 1,5 minutos y máxima de 3 minutos."),
             ("Item 6: JDLink.", 5, "Captura de pantalla desde Operations Center de la pestaña Equipo, que demuestre el Servicio de Conectividad JDLink; y Captura pantalla sin fitro, donde se visualice el total de máquinas. **-> Consideraciones:** En el caso de organizaciones con menos del 30% de máquinas con servicio de conectividad activado, la puntuación de este ítem se restablece a cero. Se otorgará el puntaje proporcional correspondiente: 30 a 40 % 1 punto | 40 a 50% 2 puntos | 50 a 60% 3 puntos | 60 a 70 % 4 puntos | más de 70% 5 puntos. Los dispositivos pendientes de transferencia y/o inactivos no se contarán."),
-            ("Item 7: Envío remoto. Mezcla de tanque.", 10, "Captura de pantalla desde Operations Center donde se vea una mezcla de tanque generada; o Captura de pantalla desde SIA evidenciando uso de ordenes de trabajo. **-> Consideraciones:** Para el caso de SIA los puntajes impactarán según se detalla a continuación: 20 a 30% 1 puntos | 30 a 40% 2 puntos | 40 a 50 % 5 puntos | más de 50% 10 puntos."),
+            ("Item 7: Envío remoto. Mezcla de tanque.", 5, "Captura de pantalla desde Operations Center donde se vea una mezcla de tanque generada; o Captura de pantalla desde SIA evidenciando uso de ordenes de trabajo. **-> Consideraciones:** Para el caso de SIA los puntajes impactarán según se detalla a continuación: 20 a 30% 1 puntos | 30 a 40% 2 puntos | 40 a 50 % 5 puntos | más de 50% 10 puntos."),
             ("Item 8: % uso de autotrac en Tractor.", 10, "Captura de pantalla en analizador de máquina/ uso de tecnología donde se muestren todos los equipos de la organización. **-> Consideraciones:** Se solicitará en promedio, un 40% de uso de autotrac en tractores de mas de 140 hp."),
             ("Item 9: % uso autotrac Cosecha.", 10, "Captura de pantalla en analizador de máquina/ uso de tecnología donde se muestren todos los equipos de la organización. **-> Consideraciones:** Se solicitará en promedio, un 70% de uso de autotrac en cosechadoras."),
             ("Item 10: % uso autotrac Pulverización.", 10, "Captura de pantalla en analizador de máquina/ uso de tecnología donde se muestren todos los equipos de la organización. **-> Consideraciones:** Se solicitará en promedio, un 70% de uso de autotrac en pulverizadoras."),
             ("Item 11: Uso de funcionalidades avanzadas.", 15, "Reporte de uso de funcionalidades avanzadas: 7 Puntos | Vídeo testimonio de cliente que demuestre el uso de funcionalidades avanzadas: 8 puntos. **-> Consideraciones:** Sólo se considerarán videos que describan la fecha de la operación, la cual debe ser en el año agrícola en curso. El vídeo deberá registrar el testimonio por parte del cliente y/o miembros de su equipo. Serán descalificados los vídeos grabados que demuestren operaciones del Distribuidor y/o de terceros."),
-            ("Item 12: Uso de tecnologías integradas.", 10, "Captura de pantalla desde Operations Center, que evidencie el uso de tecnologías integradas. **-> Consideraciones:** Combine Advisor/ActiveYield: 4 puntos | ExactApply: 3 puntos | Control de sección: 3 puntos"),
-            ("Item 13: Señal de corrección StarFire.", 5, "Captura de pantalla desde Operations Center en Analizador de máquina/uso de tecnología. **-> Consideraciones:** Señal de corrección StarFire y/o RTK (SF2, SF3, SF-RTK y RTK) en al menos en una etapa del ciclo productivo. Se obtendrá 1 punto extra dentro del item si se utiliza señal SF-RTK."),
-            ("Item 14: Paquete CSC.", 10, "Factura del paquete contratado."),
+            ("Item 12: Uso de tecnologías integradas.", 15, "Captura de pantalla desde Operations Center, que evidencie el uso de tecnologías integradas. **-> Consideraciones:** Combine Advisor/ActiveYield: 4 puntos | ExactApply: 3 puntos | Control de sección: 3 puntos"),
+            ("Item 13: Señal de corrección StarFire.", 10, "Captura de pantalla desde Operations Center en Analizador de máquina/uso de tecnología. **-> Consideraciones:** Señal de corrección StarFire y/o RTK (SF2, SF3, SF-RTK y RTK) en al menos en una etapa del ciclo productivo. Se obtendrá 1 punto extra dentro del item si se utiliza señal SF-RTK."),
+            ("Item 14: Paquete CSC.", 5, "Factura del paquete contratado."),
             ("Item 15: Vinculación de API.", 5, "Captura de pantalla desde Operations Center: Configuración / Conexiones / Seleccionar la herramienta conectada / Administrar / Organizaciones conectadas. **-> Consideraciones:** La fecha de conexión, que debe ser mayor a 4 meses desde la fecha de envío del informe."),
             ("Item 16: JDLink en otra marca.", 15, "Captura de pantalla desde <Equipos> en Operations Center."),
         ]
@@ -51,10 +51,9 @@ EVALUATION_MAP = {
     "Ganadería": {
         "worksheet": "Ganadería",
         "items": [
-            ("Item 1: Organización y estandarización de lotes.", 15, "Captura de pantalla desde Operations Center: Configuración/ Campos / Campos / Vista tabla. Excel o PDF de vista anterior. **-> Consideraciones:** En el caso de organizaciones con menos del 50% fuera del estándar, la puntuación de este ítem se restablece a cero. Caso contrario se otorgará el puntaje proporcional correspondiente: 50 a 60 % 1 punto | 60 a 70 % 3 puntos | 70 a 80% 9 puntos | 80 a 90 % 12 puntos | más de 90 % 15 puntos."),
-            ("Item 2: Digitalizar capa de siembra y mapa de picado.", 10,
-             "En al menos un lote tener digitalizada la capa de siembra y mapa de picado , que se evidenciará con una Captura de pantalla en el Analizador de Trabajo con la herramienta <comparar> , en la que se muestre el mapa de siembra y el mapa de picado dentro de la campaña. **-> Consideraciones:** Adicional de 5 puntos si se realizó alguna labor de manera variable (siembra o fertilización). Adicional de 5 puntos si en el lote hay lineas de guiado."),
-            ("Item 3: Uso de planificador de trabajo.", 20, "En los últimos 12 meses tener al menos una operación de cada una de las 3 etapas utilizando el planificador de trabajo. **-> Consideraciones:** Siembra vale 6 puntos | Pulverización 7 puntos | Cosecha 7 puntos | Las 3 etapas acumulan 20 puntos."),
+            ("Item 1: Organización y estandarización de lotes.", 10, "Captura de pantalla desde Operations Center: Configuración/ Campos / Campos / Vista tabla. Excel o PDF de vista anterior. **-> Consideraciones:** En el caso de organizaciones con menos del 50% fuera del estándar, la puntuación de este ítem se restablece a cero. Caso contrario se otorgará el puntaje proporcional correspondiente: 50 a 60 % 1 punto | 60 a 70 % 3 puntos | 70 a 80% 9 puntos | 80 a 90 % 12 puntos | más de 90 % 15 puntos."),
+            ("Item 2: Labor Digitalizada", 10,"---"),
+            ("Item 3: Uso de planificador de trabajo.", 15, "---"),
             ("Item 4: Equipo registrados en el Centro de Operaciones.", 5, "Video demostrativo de la organización donde se vea dos equipos y al menos un implemento asociado a la alimentación en cargador frontal."),
             ("Item 5: Operadores registrados en el Centro de Operaciones.", 5,
              "Video que demuestra el registro de al menos un empleado en la pestaña equipo en Operations Center."),
@@ -62,29 +61,30 @@ EVALUATION_MAP = {
             ("Item 7: Uso de Operations Center Mobile.", 10, "Grabación de video que demuestre la navegación en la plataforma Móvil, capturando la pantalla inicial y demostrando información de al menos un equipo y un mapa agronómico y la vista del planificador de trabajo. La ausencia de cualquiera de los ítems descritos anteriormente se considerará puntuación cero para este ítem; y Testimonio de cliente con el beneficio de utilizar el Centro de Operaciones mencionando los beneficios obtenidos al utilizar el Centro de Operaciones, hablando de al menos una ganancia al utilizarlo. **-> Consideraciones:** Al ser un testimonio auténtico y reciente creado para la evaluación de este ítem describiendo la principal funcionalidad utilizada (planificador de trabajo, alertas, analizador de campo) debe incluir un testimonio del cliente y/o miembros de su equipo. Serán descalificados los vídeos grabados que demuestren operaciones del Distribuidor y/o de terceros. Vídeo con una duración mínima de 1,5 minutos y máxima de 3 minutos."),
             ("Item 8: JDLink activado en máquinas John Deere.", 10, "Captura de pantalla desde Operations Center de la pestaña Equipo, que demuestre el Servicio de Conectividad JDLink; y Captura pantalla sin filtro, donde se visualice el total de máquinas. **-> Consideraciones:** En el caso de organizaciones con menos del 30% de máquinas con servicio de conectividad activado, la puntuación de este ítem se restablece a cero. Se otorgará el puntaje proporcional correspondiente: 30 a 40 % 1 punto | 40 a 50% 2 puntos | 50 a 60% 4 puntos | 60 a 70 % 6 puntos | más de 70% 10 puntos. Los dispositivos pendientes de transferencia y/o inactivos no se contarán."),
             ("Item 9: Planes de mantenimiento en tractores.", 10, "Captura de pantalla de los planes de mantenimiento asociado a tractores responsables de la alimentación."),
-            ("Item 10: Mapeo de constituyentes.", 20, "10 puntos con al menos un mapa de constituyentes en los últimos 12 meses. 10 puntos por testimonial de importancia de sensado de constituyentes."),
-            ("Item 11: Conectividad alimentación.", 20, "Al menos un tractor con conectividad visible en Operations Center. Evidencia captura de pantalla o video demostrando el recorrido en el patio de comida.."),
-            ("Item 12: Generación de informes.", 10, "Captura de pantalla desde Archivos/ Informes donde se visualice al menos un informe de máquina generado en los últimos doce meses. La fecha debe ser mayor a 4 meses desde la fecha de envío del informe."),
-            ("Item 13: Paquete contratado con el concesionario (CSC).", 10, "Factura del paquete contratado."),
+            ("Item 10: Mapeo de constituyentes.", 15, "10 puntos con al menos un mapa de constituyentes en los últimos 12 meses. 10 puntos por testimonial de importancia de sensado de constituyentes."),
+            ("Item 11: Mapeo de Corte o Henificación", 15,"---"),
+            ("Item 12: Conectividad alimentación.", 20, "Al menos un tractor con conectividad visible en Operations Center. Evidencia captura de pantalla o video demostrando el recorrido en el patio de comida.."),
+            ("Item 13: Alertas Personalizables", 15, "---"),
+            ("Item 14: Paquete contratado con el concesionario (CSC).", 5, "Factura del paquete contratado."),
         ]
     },
     "Cultivos de Alto Valor": {
         "worksheet": "Cultivos de Alto Valor",
         "items": [
             ("Item 1: Organización y estandarización de lotes.", 15, "Captura de pantalla desde Operations Center: Configuración/ Campos / Campos / Vista tabla. Excel o PDF de vista anterior. **-> Consideraciones:** En el caso de organizaciones con menos del 50% fuera del estándar, la puntuación de este ítem se restablece a cero. Caso contrario se otorgará el puntaje proporcional correspondiente: 50 a 60 % 1 punto | 60 a 70 % 3 puntos | 70 a 80% 9 puntos | 80 a 90 % 12 puntos | más de 90 % 15 puntos."),
-            ("Item 2: Lineas de guiado.", 5, "Captura de pantalla desde Operations Center, de la tabla: Configuración/ Campos/ Filtro <campos sin guiado> y, Captura de pantalla desde Operations Center: Configuración/Campos/Campos totales (sin filtro aplicado). **-> Consideraciones:** Será requisito para obtener los 5 puntos, que el 20% de los lotes cuenten con guiado."),
-            ("Item 3: Tener al menos una labor digitalizada.", 10, "Tener una operación digitalizada. Presentar el pdf del informe del Analizador de Trabajo de cualquier operación, ya sea preparación de suelo, siembra, pulverización o cosecha que se haya realizado."),
-            ("Item 4: Uso de planificador de trabajo para alguna operación.", 15, "Captura de pantalla en la sección planificador de trabajo con al menos un trabajo enviado en los últimos 12 meses."),
-            ("Item 5: Uso del Operations Center Mobile.", 10, "Grabación de video que demuestre la navegación en la plataforma Móvil, capturando la pantalla inicial y demostrando información de al menos un equipo y un mapa agronómico y la vista del planificador de trabajo. La ausencia de cualquiera de los ítems descritos anteriormente se considerará puntuación cero para este ítem y, Video del cliente mencionando los beneficios obtenidos al utilizar el Centro de Operaciones, hablando de al menos una ganancia al utilizarlo. **-> Consideraciones:** Al ser un testimonio auténtico y reciente creado para la evaluación de este ítem describiendo la principal funcionalidad utilizada (planificador de trabajo, alertas, analizador de campo) debe incluir un testimonio del cliente y/o miembros de su equipo. Serán descalificados los vídeos grabados que demuestren operaciones del Distribuidor y/o de terceros. Vídeo con una duración mínima de 1,5 minutos y máxima de 3 minutos."),
-            ("Item 6: JDLink activado en máquinas John Deere.", 10, "Captura de pantalla desde Operations Center de la pestaña Equipo, que demuestre el Servicio de Conectividad JDLink; y Captura pantalla sin filtro, donde se visualice el total de máquinas. **-> Consideraciones:** En el caso de organizaciones con menos del 30% de máquinas con servicio de conectividad activado, la puntuación de este ítem se restablece a cero. Se otorgará el puntaje proporcional correspondiente: 30 a 40 % 1 punto | 40 a 50% 2 puntos | 50 a 60% 4 puntos | 60 a 70 % 6 puntos | más de 70% 10 puntos. Los dispositivos pendientes de transferencia y/o inactivos no se contarán."),
-            ("Item 7: % uso de autotrac en Tractor.", 20, "Captura de pantalla en analizador de máquina/ uso de tecnología donde se muestren todos los equipos de la organización. **-> Consideraciones:** Se solicitará en promedio, un 30% de uso de autotrac en tractores de mas de 140 hp."),
-            ("Item 8: Implement Guidance.", 20, "Vídeo testimonio de cliente de funcionalidad avanzada. Solo se considerarán videos que describan la fecha de la operación, la cual debe ser en el año agrícola en curso. El vídeo deberá registrar el testimonio por parte del cliente y/o miembros de su equipo. Serán descalificados los vídeos grabados que demuestren operaciones del Distribuidor y/o de terceros. **-> Consideraciones:** Puede considerarse nivelación para México."),
-            ("Item 9: Señal de corrección StarFire.", 10, "Captura de pantalla desde Operations Center en Analizador de máquina/uso de tecnología. **-> Consideraciones:** Señal de corrección StarFire y/o RTK (SF2, SF3, SF-RTK y RTK) en al menos en una etapa del ciclo productivo. Se obtendrá 1 punto extra dentro del item si se utiliza señal SF-RTK."),
-            ("Item 10: Paquete contratado con el concesionario (CSC).", 10, "Factura del paquete contratado."),
-            ("Item 11: Equipos Registrados en Operations Center.", 5, "Video demostrativo de la organización donde se vea dos equipos y al menos un implemento."),
-            ("Item 12: Operadores registrados en Operations Center.", 5, "Video que demuestra el registro de al menos un empleado en la pestaña equipo en Operations Center."),
-            ("Item 13: Productos registrados en el Operations Center.", 5, "Video de la pestaña Productos demostrando los químicos, variedades, fertilizantes, mezcla (si se usa), con al menos un producto químico o variedad registrada."),
-            ("Item 14: Configuración de Alertas Personalizables.", 10, "Captura de pantalla de alguna alerta personalizable mostrando la fecha que debe ser mayor a 4 meses desde la fecha del envío del informe."),
+            ("Item 2: Labor Digitalizada.", 10, "Tener una operación digitalizada. Presentar el pdf del informe del Analizador de Trabajo de cualquier operación, ya sea preparación de suelo, siembra, pulverización o cosecha que se haya realizado."),
+            ("Item 3: Uso del Operations Center Mobile.", 10, "---"),
+            ("Item 4: JDLink activado en máquinas John Deere.", 10, "---"),
+            ("Item 5: Lineas de guiado", 5, "---"),
+            ("Item 6: % uso de autotrac en Tractor", 20, "---"),
+            ("Item 7: Uso de funcionalidades avanzadas: Guiado Pasivo de Implemento", 20, "---"),
+            ("Item 8: Señal de corrección StarFire.", 10, "---"),
+            ("Item 9: Paquete contratado con el concesionario (CSC).", 5, "Factura del paquete contratado."),
+            ("Item 10: Equipos Registrados en Operations Center.", 5, "---"),
+            ("Item 11: Operadores registrados en Operations Center.", 5, "---"),
+            ("Item 12: Productos registrados en el Operations Center.", 5, "---"),
+            ("Item 13: Alertas Personalizables.", 15, "---"),
+            ("Item 14: Uso del planificador de trabajo para alguna operacion.", 15, "---"),
         ]
     }
 }
@@ -289,12 +289,13 @@ with t3:
             stats_suc = df_f.groupby(col_suc).agg(
                 Cantidad_Inscriptos=(target, 'count'),
                 Puntaje_Promedio=(target, 'mean'),
-                Cant_Certificados=('CERTIFICA', 'sum') # Suma los True como 1
+                Cant_Certificados=('CERTIFICA', 'sum')  # Suma los True como 1
             ).reset_index()
 
             # 3. Calculamos el % de certificación
-            stats_suc['% Certificación'] = (stats_suc['Cant_Certificados'] / stats_suc['Cantidad_Inscriptos'] * 100).round(1)
-            
+            stats_suc['% Certificación'] = (
+                        stats_suc['Cant_Certificados'] / stats_suc['Cantidad_Inscriptos'] * 100).round(1)
+
             # 4. Renombramos para la visualización final
             stats_suc.columns = [
                 "Sucursal",
@@ -325,8 +326,9 @@ with t3:
             total_red = len(df_f)
             total_cert = df_f['CERTIFICA'].sum()
             porc_red = (total_cert / total_red * 100) if total_red > 0 else 0
-            
-            st.info(f"💡 **Estado de la Red:** Se han certificado **{total_cert}** de **{total_red}** clientes totales (**{porc_red:.1f}%** de efectividad).")
+
+            st.info(
+                f"💡 **Estado de la Red:** Se han certificado **{total_cert}** de **{total_red}** clientes totales (**{porc_red:.1f}%** de efectividad).")
 
         else:
             st.info("No hay datos que coincidan con los filtros seleccionados.")
