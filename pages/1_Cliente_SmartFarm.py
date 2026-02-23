@@ -60,7 +60,7 @@ EVALUATION_MAP = {
             ("Item 6: Productos registrados en el Centro de Operaciones.", 5, "Captura de pantalla: Configuración -> Productos e insumos -> al menos un producto químico o variedad registrada."),
             ("Item 7: Uso de Operations Center Mobile.", 10, "Grabación de video que demuestre la navegación en la plataforma Móvil, capturando la pantalla inicial y demostrando información de al menos un equipo y un mapa agronómico de la pantalla 25/26 y la vista del planificador de trabajo. La ausencia de cualquiera de los ítems descritos anteriormente se considerará puntuación cero para este ítem."),
             ("Item 8: JDLink activado en máquinas John Deere.", 10, "Maquinas con conectividad / Maquinas totales **-> Consideraciones:** En el caso de organizaciones con menos del 40% de máquinas con servicio de conectividad activado, la puntuación de este ítem se restablece a cero. Se otorgará el puntaje proporcional correspondiente: 40 a 50 % 2 punto | 50 a 60% 4 puntos | 60 a 70% 6 puntos | 70 a 80 % 8 puntos | más de 80% 10 puntos. Los dispositivos pendientes de transferencia y/o inactivos no se contarán."),
-            ("Item 9: Planes de mantenimiento en tractores.", 10, "¨Planes de Mantenimiento Personalizado para máquinas John Deere."),
+            ("Item 9: Planes de mantenimiento en tractores.", 10, "¨Planes de Mantenimiento Personalizado para el 50 % de máquinas John Deere. **-> Consideraciones:** 50 a 60 % 2 puntos | 60 a 70 % 4 puntos | 70 a 80 % 6 puntos | 80 a 90 % 8 puntos | más del 90 % 10 puntos."),
             ("Item 10: Mapeo de constituyentes.", 15, "Captura de pantallas desde el analizador de campos mostrando las capas de picado donde se evidencia el sensado de constituyentes en la temporada 2025/26. **-> Consideraciones:** si cuenta con el sensado de constituyentes equivale a 15 puntos, sino 0."),
             ("Item 11: Mapeo de Corte o Henificación", 15,"Captura de pantalla desde el analizador de campos mostrando un mapa de corte o henificación registrado en la temporada 2025/26. **-> Consideraciones:** si cuenta con el mapa equivale a 15 puntos, sino 0."),
             ("Item 12: Conectividad alimentación.", 20, "Al menos un tractor con conectividad visible en Operations Center. Evidencia captura de pantalla o video demostrando el recorrido en el patio de comida."),
@@ -339,3 +339,4 @@ with t3:
             st.info("No hay datos que coincidan con los filtros seleccionados.")
     else:
         st.info("Registre clientes para habilitar el panel de análisis.")
+
