@@ -70,7 +70,7 @@ EVALUATION_MAP = {
             ("Item 8: JDLink activado en máquinas John Deere.", 10,
              "40-50% 2pts | 50-60% 4pts | 60-70% 6pts | 70-80% 8pts | >80% 10pts."),
             ("Item 9: Planes de mantenimiento en tractores.", 10,
-             "Planes personalizados cargados para máquinas John Deere."),
+             "Planes cargados para máquinas John Deere. 50-60% 2pts | 60-70% 4pts | 70-80% 6pts | 80-90% 8pts | >90% 10pts"),
             ("Item 10: Mapeo de constituyentes.", 15,
              "Sensado de constituyentes temporada 25/26 visible en Analizador."),
             ("Item 11: Mapeo de Corte o Henificación", 15, "Mapa de corte o henificación temporada 25/26."),
@@ -304,3 +304,4 @@ if not main_df.empty:
                 st.balloons()
 else:
     st.info("No hay datos disponibles.")
+
