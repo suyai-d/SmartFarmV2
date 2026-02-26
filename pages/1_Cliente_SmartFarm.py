@@ -108,11 +108,11 @@ def get_row_index(worksheet, id_cliente, timestamp):
 
 
 # -----------------------------------------------------------
-# INTERFAZ PRINCIPAL
+# INTERFAZ PRINCIPAL CON 4 PESTAÑAS
 # -----------------------------------------------------------
 st.title("🚜 Gestión de Clientes SmartFarm")
 
-t1, t2, t3 = st.tabs(["➕ Registro", "✏️ Modificar", "📊 Análisis"])
+t1, t2, t3, t4 = st.tabs(["➕ Registro", "✏️ Modificar", "📊 Análisis General", "🎯 Análisis de Ítems"])
 
 # --- TAB 1: REGISTRO (Misma lógica) ---
 with t1:
@@ -381,4 +381,5 @@ with t4:
                                  color="% Avance", color_continuous_scale='RdYlGn', range_x=[0, 100])
                 fig_gap.add_vline(x=70, line_dash="dash", line_color="red")
                 st.plotly_chart(fig_gap, use_container_width=True)
+
 
