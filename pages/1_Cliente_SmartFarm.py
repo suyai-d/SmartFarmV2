@@ -23,6 +23,7 @@ st.set_page_config(
 EVALUATION_CATEGORIES = ["Granos", "Ganadería", "Cultivos de Alto Valor"]
 BRANCHES = ["Córdoba", "Pilar", "Sinsacate", "Arroyito", "Santa Rosa"]
 CLIENT_TYPES = ["Tipo 1", "Tipo 2", "Tipo 3"]
+META_CERTIFICACION = 105
 
 # EVALUATION_MAP se mantiene igual (es tu configuración de entrada)
 EVALUATION_MAP = {
@@ -237,106 +238,147 @@ with t2:
     st.link_button("📂 Acceder a Carpeta de Evidencias (Drive)",
                    "https://drive.google.com/drive/folders/1ojOeFXuiPof9R0qTL9BPeipig9pwOdzW?usp=sharing")
 
-# --- TAB 3: DASHBOARD ---
+# --- TAB 3: ANÁLISIS GENERAL (CON MÉTRICAS GLOBALES) ---
 with t3:
     df_a = load_data(MAIN_WORKSHEET_NAME)
     if not df_a.empty:
-        # Normalizamos nombres de columnas técnicos
-        target = COL_PUNTAJE.upper()  # "PUNTAJE TOTAL SMARTFARM"
-        col_cat = 'CATEGORÍA DE EVALUACIÓN'
-        col_suc = 'SUCURSAL'
-        META_CERTIFICACION = 105
-
+        target = COL_PUNTAJE.upper()
         df_a[target] = pd.to_numeric(df_a[target], errors='coerce').fillna(0)
+        df_a['CERTIFICA'] = df_a[target] >= META_CERTIFICACION
 
-        # Filtros rápidos
+        st.header("📈 Estado General de la Red")
+
+        # --- NUEVA SECCIÓN: MÉTRICAS GLOBALES ---
+        total_clientes = len(df_a)
+        total_certificados = df_a['CERTIFICA'].sum()
+        cert_porcentaje_global = (total_certificados / total_clientes * 100) if total_clientes > 0 else 0
+        promedio_global = df_a[target].mean()
+
+        m1, m2, m3 = st.columns(3)
+        m1.metric("Total Inscriptos", f"{total_clientes} Clientes")
+        m2.metric("% Certificación Global", f"{cert_porcentaje_global:.1f}%",
+                  help="Porcentaje de clientes en toda la red que superan los 105 puntos.")
+        m3.metric("Promedio de Puntaje", f"{promedio_global:.1f} Pts")
+
+        st.divider()
+
+        # Filtros Rápidos
         c1, c2 = st.columns(2)
-        f_cat = c1.multiselect("Filtrar por Categorías", EVALUATION_CATEGORIES, default=EVALUATION_CATEGORIES)
-        f_suc = c2.multiselect("Filtrar por Sucursales", BRANCHES, default=BRANCHES)
+        f_cat = c1.multiselect("Filtrar por Categorías", EVALUATION_CATEGORIES, default=EVALUATION_CATEGORIES,
+                               key="f_gen_cat")
+        f_suc = c2.multiselect("Filtrar por Sucursales", BRANCHES, default=BRANCHES, key="f_gen_suc")
 
-        df_f = df_a[df_a[col_cat].isin(f_cat) & df_a[col_suc].isin(f_suc)]
+        df_f = df_a[df_a['CATEGORÍA DE EVALUACIÓN'].isin(f_cat) & df_a['SUCURSAL'].isin(f_suc)]
 
         if not df_f.empty:
-            # 1. Gráfico de Ranking Individual
+            # Ranking Individual
             st.plotly_chart(
                 px.bar(df_f.sort_values(target, ascending=True),
-                       x=target, y='CLIENTE', color=col_cat,
+                       x=target, y='CLIENTE', color='CATEGORÍA DE EVALUACIÓN',
                        orientation='h', height=500,
                        title="🏆 Ranking Individual de Clientes"), use_container_width=True)
 
             st.divider()
 
-            # --- ANÁLISIS POR CATEGORÍA ---
-            st.subheader("📊 Análisis por Categoría")
-            col_g1, col_g2 = st.columns(2)
-
-            with col_g1:
-                fig_pie = px.pie(df_f, names=col_cat, title="📦 Inscriptos por Categoría",
-                                 hole=0.4, color_discrete_sequence=px.colors.qualitative.Pastel)
-                st.plotly_chart(fig_pie, use_container_width=True)
-
-            with col_g2:
-                stats_cat = df_f.groupby(col_cat)[target].agg(['sum', 'mean']).reset_index()
-                stats_cat.columns = [col_cat, 'Puntaje Acumulado', 'Puntaje Promedio']
-                fig_bar_cat = px.bar(stats_cat, x=col_cat, y=['Puntaje Acumulado', 'Puntaje Promedio'],
-                                     barmode='group', title="📈 Rendimiento por Categoría")
-                st.plotly_chart(fig_bar_cat, use_container_width=True)
-
-            st.divider()
-
-            # --- NUEVA SECCIÓN: DESEMPEÑO Y CERTIFICACIÓN POR SUCURSAL ---
+            # Desempeño por Sucursal
             st.subheader("🏢 Desempeño y Certificación por Sucursal")
 
-            # 1. Creamos una columna booleana para saber quién certificó
-            df_f['CERTIFICA'] = df_f[target] >= META_CERTIFICACION
-
-            # 2. Agrupamos y calculamos las métricas
-            stats_suc = df_f.groupby(col_suc).agg(
-                Cantidad_Inscriptos=(target, 'count'),
-                Puntaje_Promedio=(target, 'mean'),
-                Cant_Certificados=('CERTIFICA', 'sum')  # Suma los True como 1
+            stats_suc = df_f.groupby('SUCURSAL').agg(
+                Inscriptos=(target, 'count'),
+                Promedio=(target, 'mean'),
+                Certificados=('CERTIFICA', 'sum')
             ).reset_index()
 
-            # 3. Calculamos el % de certificación
-            stats_suc['% Certificación'] = (
-                        stats_suc['Cant_Certificados'] / stats_suc['Cantidad_Inscriptos'] * 100).round(1)
+            stats_suc['% Certificación'] = (stats_suc['Certificados'] / stats_suc['Inscriptos'] * 100).round(1)
 
-            # 4. Renombramos para la visualización final
-            stats_suc.columns = [
-                "Sucursal",
-                "Clientes Inscriptos",
-                "Promedio Pts",
-                "Certificados (>=105 pts)",
-                "% de Certificación"
-            ]
-
-            # 5. Mostramos la tabla con estilo de barra de progreso para el %
             st.dataframe(
-                stats_suc.sort_values("% de Certificación", ascending=False),
+                stats_suc.sort_values("% Certificación", ascending=False),
                 column_config={
-                    "% de Certificación": st.column_config.ProgressColumn(
-                        "% de Certificación",
-                        help="Porcentaje de clientes que superan los 105 puntos",
-                        format="%f%%",
-                        min_value=0,
-                        max_value=100,
-                    ),
-                    "Promedio Pts": st.column_config.NumberColumn(format="%.1f")
+                    "% Certificación": st.column_config.ProgressColumn("% Certificación", min_value=0, max_value=100,
+                                                                       format="%f%%"),
+                    "Promedio": st.column_config.NumberColumn(format="%.1f")
                 },
-                use_container_width=True,
-                hide_index=True
+                use_container_width=True, hide_index=True
             )
-
-            # Métrica destacada de la red
-            total_red = len(df_f)
-            total_cert = df_f['CERTIFICA'].sum()
-            porc_red = (total_cert / total_red * 100) if total_red > 0 else 0
-
-            st.info(
-                f"💡 **Estado de la Red:** Se han certificado **{total_cert}** de **{total_red}** clientes totales (**{porc_red:.1f}%** de efectividad).")
-
         else:
-            st.info("No hay datos que coincidan con los filtros seleccionados.")
+            st.info("No hay datos para los filtros seleccionados.")
     else:
-        st.info("Registre clientes para habilitar el panel de análisis.")
+        st.info("No hay datos disponibles.")
+
+# --- TAB 4: ANÁLISIS DE ÍTEMS (CORRECCIÓN DEFINITIVA DE FORMATO) ---
+with t4:
+    df_a = load_data(MAIN_WORKSHEET_NAME)
+    if not df_a.empty:
+        st.header("🎯 Oportunidades de Mejora por Ítem")
+
+        # Filtros (Categoría, Sucursal, Clientes) se mantienen igual...
+        cat_analizar = st.selectbox("Seleccionar Categoría", EVALUATION_CATEGORIES, key="cat_t4")
+        df_cat_only = df_a[df_a['CATEGORÍA DE EVALUACIÓN'] == cat_analizar]
+
+        suc_dispo = sorted(df_cat_only['SUCURSAL'].unique().tolist())
+        suc_sel = st.selectbox("Filtrar por Sucursal", ["TODAS"] + suc_dispo, key="suc_t4")
+        if suc_sel != "TODAS":
+            df_cat_only = df_cat_only[df_cat_only['SUCURSAL'] == suc_sel]
+
+        clientes_dispo = sorted(df_cat_only['CLIENTE'].unique().tolist())
+        clientes_sel = st.multiselect("Seleccionar Clientes específicos", clientes_dispo, default=clientes_dispo,
+                                      key="cli_t4")
+
+        if clientes_sel:
+            df_detalles = load_data(EVALUATION_MAP[cat_analizar]["worksheet"])
+            ids_sel = df_cat_only[df_cat_only['CLIENTE'].isin(clientes_sel)]['ID CLIENTE'].astype(str).tolist()
+            df_det_f = df_detalles[df_detalles['ID CLIENTE'].astype(str).isin(ids_sel)]
+
+            if not df_det_f.empty:
+                items_cfg = EVALUATION_MAP[cat_analizar]["items"]
+                analisis_items = []
+
+                for name, max_val, desc in items_cfg:
+                    col_name = name.strip().upper()
+                    if col_name in df_det_f.columns:
+                        promedio = pd.to_numeric(df_det_f[col_name], errors='coerce').mean()
+                        # Calculamos el porcentaje como valor de 0 a 100
+                        perc_avance = (promedio / max_val * 100) if max_val > 0 else 0
+
+                        analisis_items.append({
+                            "Ítem": name,
+                            "Máximo": max_val,
+                            "Promedio": round(promedio, 2),
+                            "% Avance": round(perc_avance, 1),  # Guardamos como 64.3 por ejemplo
+                            "Estado": "⚠️ HACER FOCO" if perc_avance < 70 else "✅ Buen nivel"
+                        })
+
+                df_resumen = pd.DataFrame(analisis_items)
+
+                # Ajuste de altura dinámica
+                h_calc = (len(df_resumen) + 1) * 38
+
+                st.dataframe(
+                    df_resumen.style.apply(
+                        lambda x: ['background-color: #ffe6e6' if v == "⚠️ HACER FOCO" else '' for v in x],
+                        subset=['Estado']),
+                    column_config={
+                        "Promedio": st.column_config.NumberColumn(
+                            "Promedio",
+                            help="Promedio de puntos obtenidos",
+                            format="%.2f"  # Muestra 3.22
+                        ),
+                        "% Avance": st.column_config.ProgressColumn(
+                            "% Avance",
+                            help="Porcentaje de avance respecto al máximo",
+                            format="%d%%",  # Muestra como entero seguido de %
+                            min_value=0,
+                            max_value=100,  # Ahora el máximo es 100
+                        )
+                    },
+                    use_container_width=True,
+                    hide_index=True,
+                    height=h_calc
+                )
+
+                # El gráfico se mantiene igual ya que ahora perc_avance es de 0-100
+                fig_gap = px.bar(df_resumen, x="% Avance", y="Ítem", orientation='h',
+                                 color="% Avance", color_continuous_scale='RdYlGn', range_x=[0, 100])
+                fig_gap.add_vline(x=70, line_dash="dash", line_color="red")
+                st.plotly_chart(fig_gap, use_container_width=True)
 
