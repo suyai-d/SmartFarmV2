@@ -350,36 +350,50 @@ with t4:
 
                 df_resumen = pd.DataFrame(analisis_items)
 
-                # Ajuste de altura dinámica
-                h_calc = (len(df_resumen) + 1) * 38
-
+                # --- ORDENAMIENTO POR PRIORIDAD (De menor a mayor avance) ---
+                # Ordenamos el DataFrame para que los que tienen menos % aparezcan arriba
+                df_resumen_ordenado = df_resumen.sort_values(by="% Avance", ascending=True)
+                
+                # Ajuste de altura dinámica basado en la cantidad de ítems
+                h_calc = (len(df_resumen_ordenado) + 1) * 38
+                
+                # 1. Tabla (mantenemos el orden original de los ítems para que sea fácil de leer)
                 st.dataframe(
-                    df_resumen.style.apply(
-                        lambda x: ['background-color: #ffe6e6' if v == "⚠️ HACER FOCO" else '' for v in x],
-                        subset=['Estado']),
+                    df_resumen.style.apply(lambda x: ['background-color: #ffe6e6' if v == "⚠️ HACER FOCO" else '' for v in x], subset=['Estado']),
                     column_config={
-                        "Promedio": st.column_config.NumberColumn(
-                            "Promedio",
-                            help="Promedio de puntos obtenidos",
-                            format="%.2f"  # Muestra 3.22
-                        ),
-                        "% Avance": st.column_config.ProgressColumn(
-                            "% Avance",
-                            help="Porcentaje de avance respecto al máximo",
-                            format="%d%%",  # Muestra como entero seguido de %
-                            min_value=0,
-                            max_value=100,  # Ahora el máximo es 100
-                        )
+                        "Promedio": st.column_config.NumberColumn("Promedio", format="%.2f"),
+                        "% Avance": st.column_config.ProgressColumn("% Avance", format="%d%%", min_value=0, max_value=100)
                     },
-                    use_container_width=True,
-                    hide_index=True,
+                    use_container_width=True, 
+                    hide_index=True, 
                     height=h_calc
                 )
-
-                # El gráfico se mantiene igual ya que ahora perc_avance es de 0-100
-                fig_gap = px.bar(df_resumen, x="% Avance", y="Ítem", orientation='h',
-                                 color="% Avance", color_continuous_scale='RdYlGn', range_x=[0, 100])
-                fig_gap.add_vline(x=70, line_dash="dash", line_color="red")
+                
+                st.divider()
+                
+                # 2. Gráfico de Barras Priorizado
+                # Nota: Plotly por defecto grafica de abajo hacia arriba, 
+                # así que para que el menor % esté "arriba", usamos ascending=False en el gráfico
+                fig_gap = px.bar(
+                    df_resumen_ordenado, 
+                    x="% Avance", 
+                    y="Ítem", 
+                    orientation='h',
+                    title=f"🔥 Prioridades de Mejora - {cat_analizar}",
+                    color="% Avance", 
+                    color_continuous_scale='RdYlGn', 
+                    range_x=[0,100],
+                    height=600,
+                    text_auto='.1f' # Esto agrega el numerito del % adentro de la barra
+                )
+                
+                # Invertimos el eje Y para que el de menor puntaje sea el primero arriba
+                fig_gap.update_yaxes(autorange="reversed")
+                
+                # Línea de meta
+                fig_gap.add_vline(x=70, line_dash="dash", line_color="red", annotation_text="Meta 70%")
+                
                 st.plotly_chart(fig_gap, use_container_width=True)
+
 
 
