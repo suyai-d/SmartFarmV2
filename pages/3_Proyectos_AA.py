@@ -1,7 +1,8 @@
 import streamlit as st
 import pandas as pd
-from datetime import datetime
+import plotly.figure_factory as ff
 import plotly.express as px
+from datetime import datetime
 from conexion import load_data, get_gspread_client, SHEET_ID, MAIN_WORKSHEET_NAME
 
 # 1. Configuración de página
@@ -16,11 +17,6 @@ STAGES_COLS = [
     ("GENERACIÓN DE INFORME - ESTADO", "GENERACIÓN DE INFORME - HORAS")
 ]
 STATUS_OPTIONS = ["No Iniciado", "En Proceso", "Completado"]
-COLOR_MAP = {
-    "Completado": "#28a745",
-    "En Proceso": "#ffc107",
-    "No Iniciado": "#6c757d"
-}
 
 
 def normalizar_df(df):
@@ -31,172 +27,225 @@ def normalizar_df(df):
 
 
 st.title("🚜 Proyectos Agronomy Analyzer")
-tab1, tab2, tab3 = st.tabs(["➕ Registro", "✏️ Edición", "📊 Dashboard"])
 
-# --- TAB 1: REGISTRO ---
+# Dos pestañas: Gestión y Dashboard
+tab1, tab2 = st.tabs(["✏️ Gestión de Estados", "📊 Dashboard"])
+
+# --- TAB 1: EDICIÓN (Gestión Directa) ---
 with tab1:
-    main_df = normalizar_df(load_data(MAIN_WORKSHEET_NAME))
-    if not main_df.empty:
-        main_df['SELECTOR'] = main_df['ID CLIENTE'].astype(str) + " - " + main_df['CLIENTE'].astype(str)
-        cli_sel = st.selectbox("Seleccionar Cliente:", [""] + main_df['SELECTOR'].unique().tolist())
+    p_df_raw = normalizar_df(load_data(PROJECTS_WORKSHEET_NAME))
+    if not p_df_raw.empty:
+        st.subheader("Actualizar datos del proyecto")
+        p_df_raw['SELECTOR_E'] = p_df_raw['CLIENTE'].astype(str) + " | " + p_df_raw['NOMBRE'].astype(str)
+        sel_e = st.selectbox("Seleccione el Proyecto para editar:", [""] + p_df_raw['SELECTOR_E'].tolist())
 
-        if cli_sel:
-            with st.form("f_reg"):
-                c1, c2 = st.columns(2)
-                tipo = c1.text_input("Tipo de Proyecto")
-                nombre_p = c2.text_input("NOMBRE DEL PROYECTO")
-                ubic = st.text_input("Ubicación")
+        if sel_e:
+            idx = p_df_raw[p_df_raw['SELECTOR_E'] == sel_e].index[0]
+            row = p_df_raw.iloc[idx]
 
-                vals = {}
+            with st.form("f_edit"):
+                st.info(f"📍 Cliente: {row['CLIENTE']} | Proyecto: {row['NOMBRE']}")
+
+                # --- SECCIÓN 1: PLANIFICACIÓN Y REFERENCIAS ---
+                c1, c2, c3 = st.columns(3)
+
+                q_options = ["Q1", "Q2", "Q3", "Q4"]
+                cur_q = str(row.get('Q PLANTEADO', 'Q1')).strip().upper()
+                new_q = c1.selectbox("Trimestre (Q):", q_options,
+                                     index=q_options.index(cur_q) if cur_q in q_options else 0)
+
+                cur_id = str(row.get('ID PRUEBA', ''))
+                new_id = c2.text_input("ID de la Prueba:", value=cur_id)
+
+                cur_link = str(row.get('LINK ACCESO', ''))
+                new_link = c3.text_input("Link de Acceso:", value=cur_link)
+
+                st.divider()
+
+                # --- SECCIÓN 2: ESTADOS Y HORAS ---
+                new_vals = {}
                 for st_col, hr_col in STAGES_COLS:
                     col_a, col_b = st.columns([2, 1])
-                    vals[st_col] = col_a.selectbox(f"{st_col.replace('_', ' ').title()}", STATUS_OPTIONS)
-                    vals[hr_col] = col_b.number_input(f"Horas {st_col.split(' - ')[0].title()}", min_value=0.0,
-                                                      step=0.5)
+                    cur_est = str(row.get(st_col, "No Iniciado"))
+                    cur_hr = float(row.get(hr_col, 0.0))
 
-                if st.form_submit_button("Guardar Proyecto"):
-                    info = main_df[main_df['SELECTOR'] == cli_sel].iloc[0]
-                    fila = [
-                        str(datetime.now().strftime("%d/%m/%Y %H:%M:%S")),
-                        str(info['ID CLIENTE']), str(info['CLIENTE']), str(info['SUCURSAL']),
-                        str(info['CATEGORÍA DE EVALUACIÓN']), str(tipo), str(nombre_p), str(ubic),
-                        str(vals[STAGES_COLS[0][0]]), float(vals[STAGES_COLS[0][1]]),
-                        str(vals[STAGES_COLS[1][0]]), float(vals[STAGES_COLS[1][1]]),
-                        str(vals[STAGES_COLS[2][0]]), float(vals[STAGES_COLS[2][1]])
-                    ]
+                    new_vals[st_col] = col_a.selectbox(f"Estado {st_col.split(' - ')[0]}", STATUS_OPTIONS,
+                                                       index=STATUS_OPTIONS.index(
+                                                           cur_est) if cur_est in STATUS_OPTIONS else 0)
+                    new_vals[hr_col] = col_b.number_input(f"Horas {st_col.split(' - ')[0]}", min_value=0.0,
+                                                          value=cur_hr, step=0.5)
+
+                if st.form_submit_button("💾 Guardar Todos los Cambios"):
                     try:
-                        client = get_gspread_client()
-                        ws = client.open_by_key(SHEET_ID).worksheet(PROJECTS_WORKSHEET_NAME)
-                        ws.append_row(fila, value_input_option='USER_ENTERED')
-                        st.success("¡Proyecto Guardado!")
+                        ws = get_gspread_client().open_by_key(SHEET_ID).worksheet(PROJECTS_WORKSHEET_NAME)
+                        row_num = int(idx) + 2
+
+                        # Actualizar Q (Columna 15 - O)
+                        ws.update_cell(row_num, 15, new_q)
+
+                        # Actualizar ID (Columna 16 - P)
+                        ws.update_cell(row_num, 16, new_id)
+
+                        # Actualizar Link (Columna 17 - Q)
+                        ws.update_cell(row_num, 17, new_link)
+
+                        # Actualizar Estados y Horas (Columnas 9 a 14)
+                        col_p = 9
+                        for st_col, hr_col in STAGES_COLS:
+                            ws.update_cell(row_num, col_p, str(new_vals[st_col]))
+                            ws.update_cell(row_num, col_p + 1, float(new_vals[hr_col]))
+                            col_p += 2
+
+                        st.success(f"¡Datos de {row['CLIENTE']} guardados correctamente!")
                         st.cache_data.clear()
                         st.rerun()
                     except Exception as e:
-                        st.error(f"Error al guardar: {e}")
+                        st.error(f"Error al conectar con Google Sheets: {e}")
+    else:
+        st.warning("No hay proyectos disponibles.")
 
-# --- TAB 2: EDICIÓN ---
+# --- TAB 2: DASHBOARD ---
 with tab2:
     p_df = normalizar_df(load_data(PROJECTS_WORKSHEET_NAME))
-    if not p_df.empty:
-        if 'NOMBRE' in p_df.columns:
-            p_df['SELECTOR_E'] = p_df['CLIENTE'].astype(str) + " | " + p_df['NOMBRE'].astype(str)
-            sel_e = st.selectbox("Proyecto a editar:", [""] + p_df['SELECTOR_E'].tolist())
-
-            if sel_e:
-                idx = p_df[p_df['SELECTOR_E'] == sel_e].index[0]
-                row = p_df.iloc[idx]
-                with st.form("f_edit"):
-                    st.subheader(f"Editando: {row['NOMBRE']}")
-                    new_vals = {}
-                    for st_col, hr_col in STAGES_COLS:
-                        c1, c2 = st.columns([2, 1])
-                        cur_est = str(row.get(st_col, "No Iniciado"))
-                        cur_hr = float(row.get(hr_col, 0.0))
-                        new_vals[st_col] = c1.selectbox(f"{st_col}", STATUS_OPTIONS, index=STATUS_OPTIONS.index(
-                            cur_est) if cur_est in STATUS_OPTIONS else 0)
-                        new_vals[hr_col] = c2.number_input(f"Horas {st_col}", min_value=0.0, value=cur_hr)
-
-                    if st.form_submit_button("Actualizar"):
-                        try:
-                            ws = get_gspread_client().open_by_key(SHEET_ID).worksheet(PROJECTS_WORKSHEET_NAME)
-                            row_num = int(idx) + 2
-                            col_p = 9
-                            for st_col, hr_col in STAGES_COLS:
-                                ws.update_cell(row_num, col_p, str(new_vals[st_col]))
-                                ws.update_cell(row_num, col_p + 1, float(new_vals[hr_col]))
-                                col_p += 2
-                            st.success("Actualizado");
-                            st.cache_data.clear();
-                            st.rerun()
-                        except Exception as e:
-                            st.error(f"Error al actualizar: {e}")
-
-# --- TAB 3: DASHBOARD ---
-with tab3:
-    p_df = normalizar_df(load_data(PROJECTS_WORKSHEET_NAME))
-    c_df = normalizar_df(load_data(MAIN_WORKSHEET_NAME))
 
     if not p_df.empty:
-        # --- FILTRO POR SUCURSAL ---
+        # 1. FILTROS
+        cf1, cf2 = st.columns(2)
         sucursales = ["Todas"] + sorted(p_df['SUCURSAL'].unique().tolist())
-        suc_sel = st.selectbox("📍 Filtrar por Sucursal:", sucursales)
+        suc_sel = cf1.selectbox("📍 Filtrar por Sucursal:", sucursales, key="filt_suc")
 
-        # Aplicar filtro
-        df_filtered = p_df.copy()
+        qs_disponibles = ["Todos"] + sorted(p_df['Q PLANTEADO'].unique().tolist())
+        q_sel = cf2.selectbox("📅 Filtrar por Q:", qs_disponibles, key="filt_q")
+
+        df_f = p_df.copy()
         if suc_sel != "Todas":
-            df_filtered = df_filtered[df_filtered['SUCURSAL'] == suc_sel]
+            df_f = df_f[df_f['SUCURSAL'] == suc_sel]
+        if q_sel != "Todos":
+            df_f = df_f[df_f['Q PLANTEADO'] == q_sel]
 
-        # Convertir horas a números
+        # 2. PROCESAMIENTO
         hr_cols = [s[1] for s in STAGES_COLS]
         for c in hr_cols:
-            df_filtered[c] = pd.to_numeric(df_filtered[c], errors='coerce').fillna(0)
-        df_filtered['TOTAL_HS'] = df_filtered[hr_cols].sum(axis=1)
+            df_f[c] = pd.to_numeric(df_f[c], errors='coerce').fillna(0)
+        df_f['TOTAL_HS'] = df_f[hr_cols].sum(axis=1).round(1)
 
-        st.subheader(f"📊 Resumen General: {suc_sel}")
+        # 3. MÉTRICAS
+        total_p = len(df_f)
+        inf_listos = len(df_f[df_f["GENERACIÓN DE INFORME - ESTADO"].astype(str).str.upper() == "COMPLETADO"])
+        tasa_cierre = (inf_listos / total_p * 100) if total_p > 0 else 0
 
-        # --- EMBUDO DE PROYECTOS (Métricas principales) ---
         m1, m2, m3, m4 = st.columns(4)
-
-        # 1. Total Proyectos
-        total_p = len(df_filtered)
-        m1.metric("Total Proyectos", total_p)
-
-        # 2. Planificación Completada
-        plan_comp = len(df_filtered[df_filtered["PLANIFICACIÓN - ESTADO"].astype(str).str.upper() == "COMPLETADO"])
-        m2.metric("Planif. Lista", plan_comp, f"{int(plan_comp / total_p * 100 if total_p > 0 else 0)}%")
-
-        # 3. Recopilación Completada
-        reco_comp = len(
-            df_filtered[df_filtered["RECOPILACIÓN DE DATOS - ESTADO"].astype(str).str.upper() == "COMPLETADO"])
-        m3.metric("Datos Recopilados", reco_comp, f"{int(reco_comp / total_p * 100 if total_p > 0 else 0)}%")
-
-        # 4. Informe Completado
-        inf_comp = len(
-            df_filtered[df_filtered["GENERACIÓN DE INFORME - ESTADO"].astype(str).str.upper() == "COMPLETADO"])
-        m4.metric("Informes Listos", inf_comp, f"{int(inf_comp / total_p * 100 if total_p > 0 else 0)}%")
-
-        # Métricas de horas debajo del embudo
-        st.write(f"⏱️ **Horas totales invertidas en esta selección:** {df_filtered['TOTAL_HS'].sum():.1f} hs")
+        m1.metric("Proyectos Activos", total_p)
+        m2.metric("Horas Totales", f"{df_f['TOTAL_HS'].sum():.1f}")
+        m3.metric("Informes Terminados", inf_listos)
+        m4.metric("Tasa de Cierre", f"{tasa_cierre:.1f}%")
 
         st.divider()
-        st.subheader("📌 Avance Detallado por Proyecto")
 
-        # Mostrar solo los proyectos filtrados
-        for _, row in df_filtered.iterrows():
-            with st.expander(f"🔹 {row.get('CLIENTE', 'S/D')} - {row.get('NOMBRE', 'S/D')}"):
-                cols_est = st.columns(3)
-                for i, (st_col, hr_col) in enumerate(STAGES_COLS):
-                    status = str(row.get(st_col, "No Iniciado"))
-                    horas = row.get(hr_col, 0)
-                    color = COLOR_MAP.get(status, "#6c757d")
-                    etapa_tit = st_col.split(" - ")[0].title()
+        # 4. GANTT
+        st.subheader("📅 Cronograma de Proyectos (Gantt)")
+        q_dates = {
+            "Q1": (datetime(2025, 11, 1), datetime(2026, 1, 31)),
+            "Q2": (datetime(2026, 2, 1), datetime(2026, 4, 30)),
+            "Q3": (datetime(2026, 5, 1), datetime(2026, 7, 31)),
+            "Q4": (datetime(2026, 8, 1), datetime(2026, 10, 31))
+        }
 
-                    cols_est[i].markdown(f"""
-                        <div style='background-color:{color}; color:white; padding:12px; border-radius:8px; text-align:center;'>
-                            <p style='margin:0; font-size:0.8em; opacity:0.9;'>{etapa_tit}</p>
-                            <h4 style='margin:0; color:white;'>{status}</h4>
-                            <p style='margin:0; font-size:0.9em; font-weight:bold;'>{horas} hs</p>
-                        </div>
-                    """, unsafe_allow_html=True)
+        gantt_data = []
+        hoy = datetime.now()
+
+        for _, row in df_f.iterrows():
+            q_val = str(row.get('Q PLANTEADO', '')).strip().upper()
+            plan_est = str(row.get("PLANIFICACIÓN - ESTADO", "")).upper()
+            reco_est = str(row.get("RECOPILACIÓN DE DATOS - ESTADO", "")).upper()
+            info_est = str(row.get("GENERACIÓN DE INFORME - ESTADO", "")).upper()
+
+            if q_val in q_dates:
+                start, end = q_dates[q_val]
+                if info_est == "COMPLETADO":
+                    recurso = "✅ Terminado"
+                elif "EN PROCESO" in [plan_est, reco_est, info_est] or "COMPLETADO" in [plan_est, reco_est]:
+                    recurso = "🟡 En Proceso"
+                elif start <= hoy <= end:
+                    recurso = "🔥 Debería estar Activo"
+                else:
+                    recurso = "⏳ Pendiente"
+
+                gantt_data.append(
+                    dict(Task=f"{row['CLIENTE']} - {row['NOMBRE']}", Start=start, Finish=end, Resource=recurso))
+
+        if gantt_data:
+            df_gantt = pd.DataFrame(gantt_data)
+            colors_gantt = {"✅ Terminado": "#28a745", "🟡 En Proceso": "#ffc107", "🔥 Debería estar Activo": "#dc3545",
+                            "⏳ Pendiente": "#6c757d"}
+            fig_gantt = ff.create_gantt(df_gantt, colors=colors_gantt, index_col='Resource', show_colorbar=True,
+                                        group_tasks=True, showgrid_x=True)
+            altura_g = max(450, len(df_gantt) * 35)
+            fig_gantt.update_layout(height=altura_g, margin=dict(t=30, b=30, l=200))
+            fig_gantt.add_vline(x=hoy.timestamp() * 1000, line_dash="dash", line_color="orange", annotation_text="HOY")
+            st.plotly_chart(fig_gantt, use_container_width=True)
 
         st.divider()
-        st.subheader("🏢 Análisis Comparativo por Sucursal")
-        if not c_df.empty:
-            suc_c = c_df.groupby('SUCURSAL')['ID CLIENTE'].nunique().reset_index(name='REGISTRADOS')
-            # Para el gráfico final usamos p_df (sin el filtro de arriba para poder comparar)
-            p_df_calc = p_df.copy()
-            for c in hr_cols: p_df_calc[c] = pd.to_numeric(p_df_calc[c], errors='coerce').fillna(0)
-            p_df_calc['TOTAL_HS'] = p_df_calc[hr_cols].sum(axis=1)
 
-            suc_p = p_df_calc.groupby('SUCURSAL').agg(
-                PROYECTOS=('CLIENTE', 'count'),
-                HORAS=('TOTAL_HS', 'sum')
-            ).reset_index()
-            resumen = pd.merge(suc_c, suc_p, on='SUCURSAL', how='left').fillna(0)
-            st.dataframe(resumen, use_container_width=True, hide_index=True)
-            st.plotly_chart(px.bar(resumen, x='SUCURSAL', y='HORAS', title="Esfuerzo Acumulado por Sucursal",
+        # 5. TABLA SEMAFÓRICA (Con ID y Botón de Link)
+        st.subheader("📌 Listado Maestro de Proyectos")
+
+
+        def style_estados_fuerte(val):
+            v = str(val).upper()
+            if v == "COMPLETADO": return "background-color: #28a745; color: white; font-weight: bold;"
+            if v == "EN PROCESO": return "background-color: #ffc107; color: black; font-weight: bold;"
+            if v == "NO INICIADO": return "background-color: #dc3545; color: white; font-weight: bold;"
+            return ""
+
+
+        # Definimos las columnas que queremos mostrar
+        # Agregamos 'ID PRUEBA' y 'LINK ACCESO'
+        cols_est_names = [s[0] for s in STAGES_COLS]
+        cols_mostrar = ['CLIENTE', 'NOMBRE', 'SUCURSAL', 'Q PLANTEADO', 'ID PRUEBA', 'LINK ACCESO'] + cols_est_names + [
+            'TOTAL_HS']
+
+        # Aplicamos el estilo solo a las columnas de estado
+        df_styled = df_f[cols_mostrar].style.applymap(style_estados_fuerte, subset=cols_est_names)
+
+        st.dataframe(
+            df_styled,
+            column_config={
+                "TOTAL_HS": st.column_config.NumberColumn("Hs Totales", format="%.1f ⏳"),
+                "LINK ACCESO": st.column_config.LinkColumn(
+                    "Enlace",
+                    help="Acceso directo a la prueba",
+                    display_text="🔗 Abrir"  # Esto hace que en lugar de la URL se vea un botón que dice "Abrir"
+                ),
+                "ID PRUEBA": st.column_config.TextColumn("ID Prueba", help="ID único de la prueba en el sistema"),
+                "Q PLANTEADO": "Trimestre",
+                "PLANIFICACIÓN - ESTADO": "Planif.",
+                "RECOPILACIÓN DE DATOS - ESTADO": "Datos",
+                "GENERACIÓN DE INFORME - ESTADO": "Informe"
+            },
+            use_container_width=True,
+            hide_index=True
+        )
+
+        # 6. GRÁFICOS FINALES
+        st.subheader("📊 Análisis de Esfuerzo")
+        g1, g2 = st.columns(2)
+
+        with g1:
+            suc_hs = df_f.groupby('SUCURSAL')['TOTAL_HS'].sum().reset_index().sort_values('TOTAL_HS', ascending=False)
+            st.plotly_chart(px.bar(suc_hs, x='SUCURSAL', y='TOTAL_HS', title="Horas por Sucursal", text_auto='.1f',
                                    color_discrete_sequence=['#28a745']), use_container_width=True)
 
+        with g2:
+            dict_hs_etapas = {
+                "Planificación": df_f["PLANIFICACIÓN - HORAS"].sum(),
+                "Recopilación Datos": df_f["RECOPILACIÓN DE DATOS - HORAS"].sum(),
+                "Generación Informe": df_f["GENERACIÓN DE INFORME - HORAS"].sum()
+            }
+            df_pie = pd.DataFrame(list(dict_hs_etapas.items()), columns=['Etapa', 'Horas'])
+            st.plotly_chart(px.pie(df_pie, values='Horas', names='Etapa', title="Horas por Etapa", hole=0.4,
+                                   color_discrete_sequence=px.colors.qualitative.Pastel), use_container_width=True)
+
 st.divider()
-st.link_button("📂 Acceder a Carpeta de Evidencias (Drive)",
+st.link_button("📂 Carpeta de Evidencias",
                "https://drive.google.com/drive/folders/1ojOeFXuiPof9R0qTL9BPeipig9pwOdzW?usp=sharing")
