@@ -47,18 +47,26 @@ with tab1:
                 st.info(f"📍 Cliente: {row['CLIENTE']} | Proyecto: {row['NOMBRE']}")
 
                 # --- SECCIÓN 1: PLANIFICACIÓN Y REFERENCIAS ---
-                c1, c2, c3 = st.columns(3)
+                c1, c2, c3, c4 = st.columns(4)
+
+                # Selector de FY (Fiscal Year)
+                cur_fy = str(row.get('FY', '26')).strip()
+                fy_options = ["25", "26", "27", "28"]
+                if cur_fy not in fy_options and cur_fy != "":
+                    fy_options.append(cur_fy)
+                new_fy = c1.selectbox("Fiscal Year (FY):", fy_options, 
+                                     index=fy_options.index(cur_fy) if cur_fy in fy_options else 1)
 
                 q_options = ["Q1", "Q2", "Q3", "Q4"]
                 cur_q = str(row.get('Q PLANTEADO', 'Q1')).strip().upper()
-                new_q = c1.selectbox("Trimestre (Q):", q_options,
+                new_q = c2.selectbox("Trimestre (Q):", q_options,
                                      index=q_options.index(cur_q) if cur_q in q_options else 0)
 
                 cur_id = str(row.get('ID PRUEBA', ''))
-                new_id = c2.text_input("ID de la Prueba:", value=cur_id)
+                new_id = c3.text_input("ID de la Prueba:", value=cur_id)
 
                 cur_link = str(row.get('LINK ACCESO', ''))
-                new_link = c3.text_input("Link de Acceso:", value=cur_link)
+                new_link = c4.text_input("Link de Acceso:", value=cur_link)
 
                 st.divider()
 
@@ -89,6 +97,9 @@ with tab1:
                         # Actualizar Link (Columna 17 - Q)
                         ws.update_cell(row_num, 17, new_link)
 
+                        # Actualizar FY (Columna 18 - R)
+                        ws.update_cell(row_num, 18, str(new_fy))
+
                         # Actualizar Estados y Horas (Columnas 9 a 14)
                         col_p = 9
                         for st_col, hr_col in STAGES_COLS:
@@ -110,14 +121,21 @@ with tab2:
 
     if not p_df.empty:
         # 1. FILTROS
-        cf1, cf2 = st.columns(2)
+        cf1, cf2, cf3 = st.columns(3)
+        
+        # Filtro de FY
+        fy_disponibles = sorted(p_df['FY'].astype(str).unique().tolist())
+        fy_sel = cf1.selectbox("📅 Filtrar por FY:", ["Todos"] + fy_disponibles, key="filt_fy")
+
         sucursales = ["Todas"] + sorted(p_df['SUCURSAL'].unique().tolist())
-        suc_sel = cf1.selectbox("📍 Filtrar por Sucursal:", sucursales, key="filt_suc")
+        suc_sel = cf2.selectbox("📍 Filtrar por Sucursal:", sucursales, key="filt_suc")
 
         qs_disponibles = ["Todos"] + sorted(p_df['Q PLANTEADO'].unique().tolist())
-        q_sel = cf2.selectbox("📅 Filtrar por Q:", qs_disponibles, key="filt_q")
+        q_sel = cf3.selectbox("⏳ Filtrar por Q:", qs_disponibles, key="filt_q")
 
         df_f = p_df.copy()
+        if fy_sel != "Todos":
+            df_f = df_f[df_f['FY'].astype(str) == str(fy_sel)]
         if suc_sel != "Todas":
             df_f = df_f[df_f['SUCURSAL'] == suc_sel]
         if q_sel != "Todos":
@@ -144,18 +162,29 @@ with tab2:
 
         # 4. GANTT
         st.subheader("📅 Cronograma de Proyectos (Gantt)")
-        q_dates = {
-            "Q1": (datetime(2025, 11, 1), datetime(2026, 1, 31)),
-            "Q2": (datetime(2026, 2, 1), datetime(2026, 4, 30)),
-            "Q3": (datetime(2026, 5, 1), datetime(2026, 7, 31)),
-            "Q4": (datetime(2026, 8, 1), datetime(2026, 10, 31))
-        }
-
+        
         gantt_data = []
         hoy = datetime.now()
 
         for _, row in df_f.iterrows():
             q_val = str(row.get('Q PLANTEADO', '')).strip().upper()
+            fy_val = str(row.get('FY', '26')).strip()
+            
+            # Determinamos el año calendario de inicio del FY (por ejemplo, FY26 -> Nov 2025)
+            try:
+                fy_int = int(fy_val)
+                start_year = (2000 + fy_int) - 1 if fy_int < 100 else fy_int - 1
+            except ValueError:
+                start_year = 2025  # Fallback a FY26 si hay dato inválido
+
+            # Fechas del Fiscal Year (Nov 1 a Oct 31)
+            q_dates = {
+                "Q1": (datetime(start_year, 11, 1), datetime(start_year + 1, 1, 31)),
+                "Q2": (datetime(start_year + 1, 2, 1), datetime(start_year + 1, 4, 30)),
+                "Q3": (datetime(start_year + 1, 5, 1), datetime(start_year + 1, 7, 31)),
+                "Q4": (datetime(start_year + 1, 8, 1), datetime(start_year + 1, 10, 31))
+            }
+
             plan_est = str(row.get("PLANIFICACIÓN - ESTADO", "")).upper()
             reco_est = str(row.get("RECOPILACIÓN DE DATOS - ESTADO", "")).upper()
             info_est = str(row.get("GENERACIÓN DE INFORME - ESTADO", "")).upper()
@@ -172,7 +201,7 @@ with tab2:
                     recurso = "⏳ Pendiente"
 
                 gantt_data.append(
-                    dict(Task=f"{row['CLIENTE']} - {row['NOMBRE']}", Start=start, Finish=end, Resource=recurso))
+                    dict(Task=f"{row['CLIENTE']} - {row['NOMBRE']} (FY{fy_val})", Start=start, Finish=end, Resource=recurso))
 
         if gantt_data:
             df_gantt = pd.DataFrame(gantt_data)
@@ -184,12 +213,13 @@ with tab2:
             fig_gantt.update_layout(height=altura_g, margin=dict(t=30, b=30, l=200))
             fig_gantt.add_vline(x=hoy.timestamp() * 1000, line_dash="dash", line_color="orange", annotation_text="HOY")
             st.plotly_chart(fig_gantt, use_container_width=True)
+        else:
+            st.info("No se encontraron proyectos para los filtros seleccionados.")
 
         st.divider()
 
-        # 5. TABLA SEMAFÓRICA (Con ID y Botón de Link)
+        # 5. TABLA SEMAFÓRICA (Con ID, Link y FY)
         st.subheader("📌 Listado Maestro de Proyectos")
-
 
         def style_estados_fuerte(val):
             v = str(val).upper()
@@ -198,24 +228,20 @@ with tab2:
             if v == "NO INICIADO": return "background-color: #dc3545; color: white; font-weight: bold;"
             return ""
 
-
-        # Definimos las columnas que queremos mostrar
-        # Agregamos 'ID PRUEBA' y 'LINK ACCESO'
         cols_est_names = [s[0] for s in STAGES_COLS]
-        cols_mostrar = ['CLIENTE', 'NOMBRE', 'SUCURSAL', 'Q PLANTEADO', 'ID PRUEBA', 'LINK ACCESO'] + cols_est_names + [
-            'TOTAL_HS']
+        cols_mostrar = ['FY', 'CLIENTE', 'NOMBRE', 'SUCURSAL', 'Q PLANTEADO', 'ID PRUEBA', 'LINK ACCESO'] + cols_est_names + ['TOTAL_HS']
 
-        # Aplicamos el estilo solo a las columnas de estado
         df_styled = df_f[cols_mostrar].style.applymap(style_estados_fuerte, subset=cols_est_names)
 
         st.dataframe(
             df_styled,
             column_config={
+                "FY": st.column_config.TextColumn("FY", help="Año Fiscal del Proyecto"),
                 "TOTAL_HS": st.column_config.NumberColumn("Hs Totales", format="%.1f ⏳"),
                 "LINK ACCESO": st.column_config.LinkColumn(
                     "Enlace",
                     help="Acceso directo a la prueba",
-                    display_text="🔗 Abrir"  # Esto hace que en lugar de la URL se vea un botón que dice "Abrir"
+                    display_text="🔗 Abrir"
                 ),
                 "ID PRUEBA": st.column_config.TextColumn("ID Prueba", help="ID único de la prueba en el sistema"),
                 "Q PLANTEADO": "Trimestre",
