@@ -55,7 +55,7 @@ with tab1:
                 if cur_fy not in fy_options and cur_fy != "":
                     fy_options.append(cur_fy)
                 new_fy = c1.selectbox("Fiscal Year (FY):", fy_options, 
-                                     index=fy_options.index(cur_fy) if cur_fy in fy_options else 1)
+                                      index=fy_options.index(cur_fy) if cur_fy in fy_options else 1)
 
                 q_options = ["Q1", "Q2", "Q3", "Q4"]
                 cur_q = str(row.get('Q PLANTEADO', 'Q1')).strip().upper()
@@ -120,26 +120,38 @@ with tab2:
     p_df = normalizar_df(load_data(PROJECTS_WORKSHEET_NAME))
 
     if not p_df.empty:
-        # 1. FILTROS
-        cf1, cf2, cf3 = st.columns(3)
+        # 1. FILTROS (Distribuidos en 4 columnas)
+        cf1, cf2, cf3, cf4 = st.columns(4)
         
         # Filtro de FY
         fy_disponibles = sorted(p_df['FY'].astype(str).unique().tolist())
         fy_sel = cf1.selectbox("📅 Filtrar por FY:", ["Todos"] + fy_disponibles, key="filt_fy")
 
-        sucursales = ["Todas"] + sorted(p_df['SUCURSAL'].unique().tolist())
+        # Filtro de Sucursal
+        sucursales = ["Todas"] + sorted(p_df['SUCURSAL'].dropna().astype(str).unique().tolist())
         suc_sel = cf2.selectbox("📍 Filtrar por Sucursal:", sucursales, key="filt_suc")
 
-        qs_disponibles = ["Todos"] + sorted(p_df['Q PLANTEADO'].unique().tolist())
+        # Filtro de Q
+        qs_disponibles = ["Todos"] + sorted(p_df['Q PLANTEADO'].dropna().astype(str).unique().tolist())
         q_sel = cf3.selectbox("⏳ Filtrar por Q:", qs_disponibles, key="filt_q")
 
+        # Filtro por Tipo de Proyecto
+        if 'TIPO DE PROYECTO' in p_df.columns:
+            tipos_disponibles = ["Todos"] + sorted(p_df['TIPO DE PROYECTO'].dropna().astype(str).unique().tolist())
+        else:
+            tipos_disponibles = ["Todos"]
+        tipo_sel = cf4.selectbox("🏷️ Tipo de Proyecto:", tipos_disponibles, key="filt_tipo")
+
+        # Aplicación de Filtros
         df_f = p_df.copy()
         if fy_sel != "Todos":
             df_f = df_f[df_f['FY'].astype(str) == str(fy_sel)]
         if suc_sel != "Todas":
-            df_f = df_f[df_f['SUCURSAL'] == suc_sel]
+            df_f = df_f[df_f['SUCURSAL'].astype(str) == suc_sel]
         if q_sel != "Todos":
-            df_f = df_f[df_f['Q PLANTEADO'] == q_sel]
+            df_f = df_f[df_f['Q PLANTEADO'].astype(str) == q_sel]
+        if tipo_sel != "Todos" and 'TIPO DE PROYECTO' in df_f.columns:
+            df_f = df_f[df_f['TIPO DE PROYECTO'].astype(str) == tipo_sel]
 
         # 2. PROCESAMIENTO
         hr_cols = [s[1] for s in STAGES_COLS]
@@ -218,7 +230,7 @@ with tab2:
 
         st.divider()
 
-        # 5. TABLA SEMAFÓRICA (Con ID, Link y FY)
+        # 5. TABLA SEMAFÓRICA (Con ID, Link, FY y Tipo de Proyecto)
         st.subheader("📌 Listado Maestro de Proyectos")
 
         def style_estados_fuerte(val):
@@ -229,26 +241,35 @@ with tab2:
             return ""
 
         cols_est_names = [s[0] for s in STAGES_COLS]
-        cols_mostrar = ['FY', 'CLIENTE', 'NOMBRE', 'SUCURSAL', 'Q PLANTEADO', 'ID PRUEBA', 'LINK ACCESO'] + cols_est_names + ['TOTAL_HS']
+        
+        base_cols = ['FY', 'CLIENTE', 'NOMBRE']
+        if 'TIPO DE PROYECTO' in df_f.columns:
+            base_cols.append('TIPO DE PROYECTO')
+        base_cols += ['SUCURSAL', 'Q PLANTEADO', 'ID PRUEBA', 'LINK ACCESO']
+        
+        cols_mostrar = base_cols + cols_est_names + ['TOTAL_HS']
 
         df_styled = df_f[cols_mostrar].style.applymap(style_estados_fuerte, subset=cols_est_names)
 
+        column_config = {
+            "FY": st.column_config.TextColumn("FY", help="Año Fiscal del Proyecto"),
+            "TIPO DE PROYECTO": st.column_config.TextColumn("Tipo", help="Tipo de Proyecto / Producto"),
+            "TOTAL_HS": st.column_config.NumberColumn("Hs Totales", format="%.1f ⏳"),
+            "LINK ACCESO": st.column_config.LinkColumn(
+                "Enlace",
+                help="Acceso directo a la prueba",
+                display_text="🔗 Abrir"
+            ),
+            "ID PRUEBA": st.column_config.TextColumn("ID Prueba", help="ID único de la prueba en el sistema"),
+            "Q PLANTEADO": "Trimestre",
+            "PLANIFICACIÓN - ESTADO": "Planif.",
+            "RECOPILACIÓN DE DATOS - ESTADO": "Datos",
+            "GENERACIÓN DE INFORME - ESTADO": "Informe"
+        }
+
         st.dataframe(
             df_styled,
-            column_config={
-                "FY": st.column_config.TextColumn("FY", help="Año Fiscal del Proyecto"),
-                "TOTAL_HS": st.column_config.NumberColumn("Hs Totales", format="%.1f ⏳"),
-                "LINK ACCESO": st.column_config.LinkColumn(
-                    "Enlace",
-                    help="Acceso directo a la prueba",
-                    display_text="🔗 Abrir"
-                ),
-                "ID PRUEBA": st.column_config.TextColumn("ID Prueba", help="ID único de la prueba en el sistema"),
-                "Q PLANTEADO": "Trimestre",
-                "PLANIFICACIÓN - ESTADO": "Planif.",
-                "RECOPILACIÓN DE DATOS - ESTADO": "Datos",
-                "GENERACIÓN DE INFORME - ESTADO": "Informe"
-            },
+            column_config=column_config,
             use_container_width=True,
             hide_index=True
         )
